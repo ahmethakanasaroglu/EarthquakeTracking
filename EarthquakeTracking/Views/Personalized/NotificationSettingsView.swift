@@ -60,7 +60,7 @@ class NotificationSettingsViewController: UIViewController {
     private lazy var magnitudeSlider: UISlider = {
         let slider = UISlider()
         slider.translatesAutoresizingMaskIntoConstraints = false
-        slider.minimumValue = 3.0
+        slider.minimumValue = 1.0
         slider.maximumValue = 7.0
         slider.value = Float(viewModel.selectedMagnitudeThreshold)
         slider.minimumTrackTintColor = .systemBlue
