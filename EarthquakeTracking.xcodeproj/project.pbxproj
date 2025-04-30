@@ -33,7 +33,7 @@
 		0DFA12232DC20A16006019E6 /* Exceptions for "EarthquakeTracking" folder in "EarthquakeTracking" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Resources/Info.plist,
 			);
 			target = 0DFA11F72DC20A15006019E6 /* EarthquakeTracking */;
 		};
