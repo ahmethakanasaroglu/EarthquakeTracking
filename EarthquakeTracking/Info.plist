@@ -2,22 +2,36 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-		<key>UISceneConfigurations</key>
-		<dict>
-			<key>UIWindowSceneSessionRoleApplication</key>
-			<array>
-				<dict>
-					<key>UISceneConfigurationName</key>
-					<string>Default Configuration</string>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-				</dict>
-			</array>
-		</dict>
-	</dict>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+        <key>UISceneConfigurations</key>
+        <dict>
+            <key>UIWindowSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneConfigurationName</key>
+                    <string>Default Configuration</string>
+                    <key>UISceneDelegateClassName</key>
+                    <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    <!-- Konum izinleri -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Deprem verilerini ve risk analizi bilgilerini konumunuza göre gösterebilmek için konum izni gerekiyor.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Deprem uyarılarını yakın çevrenizdeki aktivitelere göre alabilmeniz için konum izni gerekiyor.</string>
+    
+    <!-- Kamera ve AR izinleri -->
+    <key>NSCameraUsageDescription</key>
+    <string>AR ev güvenliği taraması yapabilmek için kamera izni gerekiyor.</string>
 </dict>
 </plist>
