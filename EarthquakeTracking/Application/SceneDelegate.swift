@@ -20,15 +20,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         listNavigationController.tabBarItem = UITabBarItem(title: "Depremler", image: UIImage(systemName: "list.bullet"), tag: 0)
         
         // Create the AI powered view controller
-        let aiPoweredViewController = PersonalizedViewController()
-        let aiNavigationController = UINavigationController(rootViewController: aiPoweredViewController)
-        aiNavigationController.tabBarItem = UITabBarItem(title: "Kişiselleştirilmiş", image: UIImage(systemName: "person.fill.viewfinder"), tag: 1)
+        let personalizedViewController = PersonalizedViewController()
+        let personalizedNavigationController = UINavigationController(rootViewController: personalizedViewController)
+        personalizedNavigationController.tabBarItem = UITabBarItem(title: "Kişiselleştirilmiş", image: UIImage(systemName: "person.fill.viewfinder"), tag: 1)
+        
+        // Mevcut tab bar'a yeni bir sekme eklemek
+        let aiExtensionsViewController = AIExtensionsViewController()
+        let aiNavigationController = UINavigationController(rootViewController: aiExtensionsViewController)
+        aiNavigationController.tabBarItem = UITabBarItem(title: "AI Eklentileri", image: UIImage(systemName: "brain"), tag: 2)
         
         // Set the tab bar items
-        tabBarController.viewControllers = [listNavigationController, aiNavigationController]
+        tabBarController.viewControllers = [listNavigationController, personalizedNavigationController, aiNavigationController]
         
         // Set the navigation appearance
         configureNavigationBarAppearance(for: listNavigationController)
+        configureNavigationBarAppearance(for: personalizedNavigationController)
         configureNavigationBarAppearance(for: aiNavigationController)
         
         // Configure tab bar appearance
