@@ -1,0 +1,574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		0DFA12122DC20A16006019E6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0DFA11F02DC20A15006019E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0DFA11F72DC20A15006019E6;
+			remoteInfo = EarthquakeTracking;
+		};
+		0DFA121C2DC20A16006019E6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0DFA11F02DC20A15006019E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0DFA11F72DC20A15006019E6;
+			remoteInfo = EarthquakeTracking;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0DFA11F82DC20A15006019E6 /* EarthquakeTracking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EarthquakeTracking.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFA12112DC20A16006019E6 /* EarthquakeTrackingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EarthquakeTrackingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFA121B2DC20A16006019E6 /* EarthquakeTrackingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EarthquakeTrackingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0DFA12232DC20A16006019E6 /* Exceptions for "EarthquakeTracking" folder in "EarthquakeTracking" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0DFA11F72DC20A15006019E6 /* EarthquakeTracking */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0DFA11FA2DC20A15006019E6 /* EarthquakeTracking */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0DFA12232DC20A16006019E6 /* Exceptions for "EarthquakeTracking" folder in "EarthquakeTracking" target */,
+			);
+			path = EarthquakeTracking;
+			sourceTree = "<group>";
+		};
+		0DFA12142DC20A16006019E6 /* EarthquakeTrackingTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = EarthquakeTrackingTests;
+			sourceTree = "<group>";
+		};
+		0DFA121E2DC20A16006019E6 /* EarthquakeTrackingUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = EarthquakeTrackingUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0DFA11F52DC20A15006019E6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA120E2DC20A16006019E6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA12182DC20A16006019E6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0DFA11EF2DC20A15006019E6 = {
+			isa = PBXGroup;
+			children = (
+				0DFA11FA2DC20A15006019E6 /* EarthquakeTracking */,
+				0DFA12142DC20A16006019E6 /* EarthquakeTrackingTests */,
+				0DFA121E2DC20A16006019E6 /* EarthquakeTrackingUITests */,
+				0DFA11F92DC20A15006019E6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0DFA11F92DC20A15006019E6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0DFA11F82DC20A15006019E6 /* EarthquakeTracking.app */,
+				0DFA12112DC20A16006019E6 /* EarthquakeTrackingTests.xctest */,
+				0DFA121B2DC20A16006019E6 /* EarthquakeTrackingUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0DFA11F72DC20A15006019E6 /* EarthquakeTracking */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFA12242DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTracking" */;
+			buildPhases = (
+				0DFA11F42DC20A15006019E6 /* Sources */,
+				0DFA11F52DC20A15006019E6 /* Frameworks */,
+				0DFA11F62DC20A15006019E6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0DFA11FA2DC20A15006019E6 /* EarthquakeTracking */,
+			);
+			name = EarthquakeTracking;
+			packageProductDependencies = (
+			);
+			productName = EarthquakeTracking;
+			productReference = 0DFA11F82DC20A15006019E6 /* EarthquakeTracking.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0DFA12102DC20A16006019E6 /* EarthquakeTrackingTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFA12292DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTrackingTests" */;
+			buildPhases = (
+				0DFA120D2DC20A16006019E6 /* Sources */,
+				0DFA120E2DC20A16006019E6 /* Frameworks */,
+				0DFA120F2DC20A16006019E6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0DFA12132DC20A16006019E6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0DFA12142DC20A16006019E6 /* EarthquakeTrackingTests */,
+			);
+			name = EarthquakeTrackingTests;
+			packageProductDependencies = (
+			);
+			productName = EarthquakeTrackingTests;
+			productReference = 0DFA12112DC20A16006019E6 /* EarthquakeTrackingTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		0DFA121A2DC20A16006019E6 /* EarthquakeTrackingUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFA122C2DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTrackingUITests" */;
+			buildPhases = (
+				0DFA12172DC20A16006019E6 /* Sources */,
+				0DFA12182DC20A16006019E6 /* Frameworks */,
+				0DFA12192DC20A16006019E6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0DFA121D2DC20A16006019E6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0DFA121E2DC20A16006019E6 /* EarthquakeTrackingUITests */,
+			);
+			name = EarthquakeTrackingUITests;
+			packageProductDependencies = (
+			);
+			productName = EarthquakeTrackingUITests;
+			productReference = 0DFA121B2DC20A16006019E6 /* EarthquakeTrackingUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0DFA11F02DC20A15006019E6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					0DFA11F72DC20A15006019E6 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					0DFA12102DC20A16006019E6 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 0DFA11F72DC20A15006019E6;
+					};
+					0DFA121A2DC20A16006019E6 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 0DFA11F72DC20A15006019E6;
+					};
+				};
+			};
+			buildConfigurationList = 0DFA11F32DC20A15006019E6 /* Build configuration list for PBXProject "EarthquakeTracking" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0DFA11EF2DC20A15006019E6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0DFA11F92DC20A15006019E6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0DFA11F72DC20A15006019E6 /* EarthquakeTracking */,
+				0DFA12102DC20A16006019E6 /* EarthquakeTrackingTests */,
+				0DFA121A2DC20A16006019E6 /* EarthquakeTrackingUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0DFA11F62DC20A15006019E6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA120F2DC20A16006019E6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA12192DC20A16006019E6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0DFA11F42DC20A15006019E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA120D2DC20A16006019E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DFA12172DC20A16006019E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0DFA12132DC20A16006019E6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0DFA11F72DC20A15006019E6 /* EarthquakeTracking */;
+			targetProxy = 0DFA12122DC20A16006019E6 /* PBXContainerItemProxy */;
+		};
+		0DFA121D2DC20A16006019E6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0DFA11F72DC20A15006019E6 /* EarthquakeTracking */;
+			targetProxy = 0DFA121C2DC20A16006019E6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0DFA12252DC20A16006019E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EarthquakeTracking/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTracking;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0DFA12262DC20A16006019E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EarthquakeTracking/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTracking;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0DFA12272DC20A16006019E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0DFA12282DC20A16006019E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0DFA122A2DC20A16006019E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTrackingTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/EarthquakeTracking.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/EarthquakeTracking";
+			};
+			name = Debug;
+		};
+		0DFA122B2DC20A16006019E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTrackingTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/EarthquakeTracking.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/EarthquakeTracking";
+			};
+			name = Release;
+		};
+		0DFA122D2DC20A16006019E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTrackingUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = EarthquakeTracking;
+			};
+			name = Debug;
+		};
+		0DFA122E2DC20A16006019E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X32QWL27MB;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahmethakanasaroglu.EarthquakeTrackingUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = EarthquakeTracking;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0DFA11F32DC20A15006019E6 /* Build configuration list for PBXProject "EarthquakeTracking" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFA12272DC20A16006019E6 /* Debug */,
+				0DFA12282DC20A16006019E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0DFA12242DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTracking" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFA12252DC20A16006019E6 /* Debug */,
+				0DFA12262DC20A16006019E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0DFA12292DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTrackingTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFA122A2DC20A16006019E6 /* Debug */,
+				0DFA122B2DC20A16006019E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0DFA122C2DC20A16006019E6 /* Build configuration list for PBXNativeTarget "EarthquakeTrackingUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFA122D2DC20A16006019E6 /* Debug */,
+				0DFA122E2DC20A16006019E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0DFA11F02DC20A15006019E6 /* Project object */;
+}
