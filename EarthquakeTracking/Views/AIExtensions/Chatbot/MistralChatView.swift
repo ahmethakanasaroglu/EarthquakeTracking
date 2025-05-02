@@ -349,7 +349,7 @@ class MistralChatViewController: UIViewController {
     private func showTypingIndicator() {
         let loadingCell = UIActivityIndicatorView(style: .medium)
         loadingCell.startAnimating()
-        loadingCell.frame = CGRect(x: 30, y: 10, width: 30, height: 30)
+        loadingCell.frame = CGRect(x: 13, y: 10, width: 30, height: 30)
         
         let containerView = UIView()
         containerView.backgroundColor = .secondarySystemBackground
