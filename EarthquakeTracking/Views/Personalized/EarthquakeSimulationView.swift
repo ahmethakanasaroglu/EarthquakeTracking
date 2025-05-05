@@ -140,7 +140,6 @@ class EarthquakeSimulationViewController: UIViewController {
         title = "Deprem Simülasyonu"
         view.backgroundColor = .systemBackground
         
-        // Add views to hierarchy
         view.addSubview(headerLabel)
         view.addSubview(descriptionLabel)
         view.addSubview(magnitudeValueLabel)
@@ -152,7 +151,6 @@ class EarthquakeSimulationViewController: UIViewController {
         view.addSubview(startSimulationButton)
         view.addSubview(loadingIndicator)
         
-        // Setup constraints
         NSLayoutConstraint.activate([
             headerLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             headerLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
@@ -195,7 +193,7 @@ class EarthquakeSimulationViewController: UIViewController {
     }
     
     private func setupBindings() {
-        // Simülasyon aktif durumu değiştiğinde UI güncelle
+
         viewModel.$isSimulationActive
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isActive in
@@ -203,7 +201,6 @@ class EarthquakeSimulationViewController: UIViewController {
             }
             .store(in: &cancellables)
         
-        // Simülasyon yoğunluğu değiştiğinde titreşim efektini güncelle
         viewModel.$simulationIntensity
             .receive(on: DispatchQueue.main)
             .sink { [weak self] intensity in
@@ -211,7 +208,6 @@ class EarthquakeSimulationViewController: UIViewController {
             }
             .store(in: &cancellables)
         
-        // Simülasyon efekti değiştiğinde açıklamayı güncelle
         viewModel.$simulationEffect
             .receive(on: DispatchQueue.main)
             .sink { [weak self] effect in
@@ -228,26 +224,20 @@ class EarthquakeSimulationViewController: UIViewController {
             startSimulationButton.setImage(UIImage(systemName: "stop.fill"), for: .normal)
             startSimulationButton.backgroundColor = .systemRed
             
-            // Disable slider during simulation
             magnitudeSlider.isEnabled = false
             
-            // Start animation for earthquake visual
             startEarthquakeAnimation()
             
-            // Play earthquake sound
             playEarthquakeSound()
         } else {
             startSimulationButton.setTitle("Simülasyonu Başlat", for: .normal)
             startSimulationButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
             startSimulationButton.backgroundColor = .systemGreen
             
-            // Re-enable slider
             magnitudeSlider.isEnabled = true
             
-            // Stop animation
             stopEarthquakeAnimation()
             
-            // Stop sound
             stopEarthquakeSound()
         }
     }
@@ -278,7 +268,6 @@ class EarthquakeSimulationViewController: UIViewController {
     // MARK: - Simulation Effects
     
     private func applySimulationEffect(intensity: Double) {
-        // Visual feedback
         let scale = 1.0 + abs(intensity) * 0.1
         let translation = CGAffineTransform(translationX: intensity * 10, y: 0)
         
@@ -286,7 +275,6 @@ class EarthquakeSimulationViewController: UIViewController {
             self.view.transform = translation
         }
         
-        // Haptic feedback based on intensity
         if abs(intensity) > 0.7 {
             let heavyFeedback = UIImpactFeedbackGenerator(style: .heavy)
             heavyFeedback.impactOccurred()
@@ -310,7 +298,6 @@ class EarthquakeSimulationViewController: UIViewController {
                 self.simulationImageView.transform = CGAffineTransform(scaleX: scale, y: scale)
                     .concatenating(CGAffineTransform(translationX: intensity * 5, y: intensity * 3))
                 
-                // Earthquake wave color changes based on intensity
                 self.simulationImageView.tintColor = abs(intensity) > 0.5 ? .systemRed :
                                                      abs(intensity) > 0.3 ? .systemOrange : .systemBlue
             }
@@ -329,8 +316,6 @@ class EarthquakeSimulationViewController: UIViewController {
     }
     
     private func playEarthquakeSound() {
-        // In a real app, you would play an earthquake rumble sound
-        // For now, we'll just simulate it with logging
         print("Playing earthquake sound effect")
     }
     

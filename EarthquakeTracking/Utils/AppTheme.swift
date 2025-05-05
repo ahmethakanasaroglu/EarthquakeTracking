@@ -28,7 +28,7 @@ struct AppTheme {
     static let warningColor = accentColor
     static let errorColor = secondaryColor
     
-    // MARK: - Magnitude Colors (for earthquake magnitude visualization)
+    // MARK: - Magnitude Colors
     static func magnitudeColor(for magnitude: Double) -> UIColor {
         switch magnitude {
         case 0..<3.0:
@@ -54,7 +54,6 @@ struct AppTheme {
             button.backgroundColor = primaryColor
             button.setTitleColor(.white, for: .normal)
             
-            // Add subtle inner shadow for depth
             button.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
             button.layer.shadowOffset = CGSize(width: 0, height: 1)
             button.layer.shadowRadius = 2
@@ -84,14 +83,13 @@ struct AppTheme {
         view.layer.shadowRadius = 8
         view.layer.shadowOpacity = 1
         
-        // Add subtle border for better definition
         view.layer.borderWidth = 1
         view.layer.borderColor = UIColor(red: 226/255, green: 232/255, blue: 240/255, alpha: 0.6).cgColor
     }
     
     // MARK: - Background Gradient
     static func applyBackgroundGradient(to view: UIView) {
-        // Remove existing gradient layers
+
         view.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
         
         let gradientLayer = CAGradientLayer()
@@ -115,7 +113,6 @@ struct AppTheme {
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
         
-        // Add subtle shadow
         appearance.shadowColor = UIColor.black.withAlphaComponent(0.1)
         
         return appearance
@@ -126,16 +123,13 @@ struct AppTheme {
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .white
         
-        // Add subtle shadow to top
         appearance.shadowColor = UIColor.black.withAlphaComponent(0.03)
         appearance.shadowImage = createShadowImage()
         
-        // Configure selected icon and title colors
         let selected = UITabBarItemAppearance()
         selected.normal.iconColor = primaryColor
         selected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: primaryColor]
         
-        // Configure unselected icon and title colors
         let unselected = UITabBarItemAppearance()
         unselected.normal.iconColor = lightTextColor
         unselected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: lightTextColor]

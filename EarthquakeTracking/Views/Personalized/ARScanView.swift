@@ -9,7 +9,6 @@ class ARRealObjectSimulationViewController: UIViewController {
     private let viewModel: PersonalizedViewModel
     private var cancellables = Set<AnyCancellable>()
     
-    // AR ve SceneKit
     private let arSceneView = ARSCNView()
     private var detectedObjects = [SCNNode]()
     private var simulationActive = false
@@ -19,7 +18,6 @@ class ARRealObjectSimulationViewController: UIViewController {
     private var scanningTimer: Timer?
     private var scanningTimeLeft = 5
     
-    // UI Bileşenleri
     private let simulationControlPanel = UIView()
     private let magnitudeSlider = UISlider()
     private let magnitudeLabel = UILabel()
@@ -66,22 +64,18 @@ class ARRealObjectSimulationViewController: UIViewController {
         title = "Gerçek Nesne Simülasyonu"
         view.backgroundColor = .black
         
-        // AR View Setup
         arSceneView.translatesAutoresizingMaskIntoConstraints = false
         arSceneView.delegate = self
         arSceneView.automaticallyUpdatesLighting = true
         arSceneView.debugOptions = []
         view.addSubview(arSceneView)
         
-        // Kontrol Paneli
         setupControlPanel()
         
-        // Info Button
         infoButton.translatesAutoresizingMaskIntoConstraints = false
         infoButton.addTarget(self, action: #selector(showInfo), for: .touchUpInside)
         view.addSubview(infoButton)
         
-        // Intensity Label
         intensityLabel.translatesAutoresizingMaskIntoConstraints = false
         intensityLabel.text = "Deprem Şiddeti: Pasif"
         intensityLabel.textColor = .white
@@ -93,7 +87,6 @@ class ARRealObjectSimulationViewController: UIViewController {
         intensityLabel.isHidden = true
         view.addSubview(intensityLabel)
         
-        // Nesne Algılama Buton
         detectObjectsButton.translatesAutoresizingMaskIntoConstraints = false
         detectObjectsButton.setTitle("Nesneleri Tanımla", for: .normal)
         detectObjectsButton.setImage(UIImage(systemName: "camera.viewfinder"), for: .normal)
@@ -104,10 +97,8 @@ class ARRealObjectSimulationViewController: UIViewController {
         detectObjectsButton.addTarget(self, action: #selector(startObjectDetection), for: .touchUpInside)
         view.addSubview(detectObjectsButton)
         
-        // Tarama Kaplama
         setupScanningOverlay()
         
-        // Constraints
         NSLayoutConstraint.activate([
             arSceneView.topAnchor.constraint(equalTo: view.topAnchor),
             arSceneView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -176,13 +167,11 @@ class ARRealObjectSimulationViewController: UIViewController {
         simulationControlPanel.layer.cornerRadius = 16
         view.addSubview(simulationControlPanel)
         
-        // Magnitude Label
         magnitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         magnitudeLabel.text = "Deprem Büyüklüğü: 5.0"
         magnitudeLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         magnitudeLabel.textAlignment = .center
         
-        // Magnitude Slider
         magnitudeSlider.translatesAutoresizingMaskIntoConstraints = false
         magnitudeSlider.minimumValue = 3.0
         magnitudeSlider.maximumValue = 9.0
@@ -190,7 +179,6 @@ class ARRealObjectSimulationViewController: UIViewController {
         magnitudeSlider.minimumTrackTintColor = .systemBlue
         magnitudeSlider.addTarget(self, action: #selector(magnitudeChanged), for: .valueChanged)
         
-        // Start Button
         startButton.translatesAutoresizingMaskIntoConstraints = false
         startButton.setTitle("Simülasyonu Başlat", for: .normal)
         startButton.backgroundColor = .systemGreen
@@ -199,7 +187,6 @@ class ARRealObjectSimulationViewController: UIViewController {
         startButton.addTarget(self, action: #selector(toggleSimulation), for: .touchUpInside)
         startButton.isEnabled = false // İlk başta nesne tanımlanana kadar devre dışı
         
-        // Reset Button
         resetButton.translatesAutoresizingMaskIntoConstraints = false
         resetButton.setTitle("Sıfırla", for: .normal)
         resetButton.backgroundColor = .systemGray
@@ -207,7 +194,6 @@ class ARRealObjectSimulationViewController: UIViewController {
         resetButton.setTitleColor(.white, for: .normal)
         resetButton.addTarget(self, action: #selector(resetSimulation), for: .touchUpInside)
         
-        // Panel Layout
         let buttonsStackView = UIStackView(arrangedSubviews: [startButton, resetButton])
         buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
         buttonsStackView.axis = .horizontal
@@ -240,7 +226,7 @@ class ARRealObjectSimulationViewController: UIViewController {
     }
     
     private func setupBindings() {
-        // ViewModel ile bağlantılar
+
         viewModel.$simulationIntensity
             .receive(on: DispatchQueue.main)
             .sink { [weak self] intensity in
@@ -268,11 +254,9 @@ class ARRealObjectSimulationViewController: UIViewController {
         detectObjectsButton.isEnabled = false
         scanningTimeLeft = 5
         
-        // İlerleme çubuğunu sıfırla
         scanningProgressView.progress = 0.0
         scanningLabel.text = "Nesneleri Tarama: 5 sn"
         
-        // Zamanlayıcıyı başlat
         scanningTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
             guard let self = self else { return }
             
@@ -286,13 +270,11 @@ class ARRealObjectSimulationViewController: UIViewController {
             }
         }
         
-        // ARKit oturumunu yapılandır - gerçek nesneleri algılamak için
         configureARSessionForObjectDetection()
     }
     
     private func configureARSessionForObjectDetection() {
-        // Şimdilik, basit bir dünya takibi ile kamera görüntüsünü kullanalım
-        // Gerçek hayatta, ARKit'in nesne algılama özellikleri veya ML görüntü tanıma kullanılabilir
+
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
         configuration.environmentTexturing = .automatic
@@ -304,49 +286,35 @@ class ARRealObjectSimulationViewController: UIViewController {
         objectDetectionActive = false
         detectObjectsButton.isEnabled = true
         
-        // Camera frame'den nesneleri yakala
         captureObjectsFromCurrentFrame()
         
-        // Başlatma butonunu etkinleştir
         startButton.isEnabled = true
     }
     
     private func captureObjectsFromCurrentFrame() {
-        // Gerçek hayatta, ARKit'in veya ML'nin nesne algılama özellikleri kullanılarak nesneler tanımlanabilir
-        // Basitleştirilmiş bir sürüm olarak, sahnede rastgele "kutular" algılanmış gibi yapalım
         
-        // Önce eski nesneleri temizle
         clearDetectedObjects()
-        
-        // 1.5 saniyelik basılı tutmada gerçekten nesne algılaması yapmak için ARKit'in
-        // özelliklerini kullanmak gerekir; burada simüle edilmiş nesneler oluşturuyoruz
-        
-        // Gerçek bir masaüstü oluştur
+
         let tableNode = createTableSurfaceNode()
         arSceneView.scene.rootNode.addChildNode(tableNode)
         detectedObjects.append(tableNode)
         
-        // Masaüstü bilgisayar
         let computerNode = createComputerNode()
         arSceneView.scene.rootNode.addChildNode(computerNode)
         detectedObjects.append(computerNode)
         
-        // Kahve fincanı
         let coffeeNode = createCoffeeMugNode()
         arSceneView.scene.rootNode.addChildNode(coffeeNode)
         detectedObjects.append(coffeeNode)
         
-        // Kitap
         let bookNode = createBookNode()
         arSceneView.scene.rootNode.addChildNode(bookNode)
         detectedObjects.append(bookNode)
         
-        // Kalem ve defter
         let penNode = createPenNode()
         arSceneView.scene.rootNode.addChildNode(penNode)
         detectedObjects.append(penNode)
         
-        // Kullanıcıya geri bildirim
         showToast(message: "\(detectedObjects.count) nesne bulundu ve simülasyona hazır")
     }
     
@@ -373,13 +341,11 @@ class ARRealObjectSimulationViewController: UIViewController {
         startButton.backgroundColor = .systemRed
         intensityLabel.isHidden = false
         
-        // Nesne hareket zamanlayıcısını başlat
         simulationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             self.applyEarthquakeForces()
         }
         
-        // Haptic geri bildirimi başlat
         startHapticFeedback()
     }
     
@@ -389,37 +355,30 @@ class ARRealObjectSimulationViewController: UIViewController {
         startButton.backgroundColor = .systemGreen
         intensityLabel.isHidden = true
         
-        // Zamanlayıcıyı durdur
         simulationTimer?.invalidate()
         simulationTimer = nil
         
-        // Nesnelerin hareketini durdur
         stabilizeObjects()
     }
     
     @objc private func resetSimulation() {
-        // Aktif simülasyonu durdur
         stopSimulation()
         
-        // Algılanan nesneleri sıfırla
         clearDetectedObjects()
         
-        // Etkinleştirme dışı kontrolleri sıfırla
         startButton.isEnabled = false
     }
     
     private func applyEarthquakeForces() {
         guard simulationActive else { return }
         
-        // Perlin gürültüsü kullanarak gerçekçi deprem hareketi oluştur
         let time = CACurrentMediaTime()
         let xShake = Float(generatePerlinNoise(time: time, frequency: 4.0)) * currentMagnitude * 0.01
         let yShake = Float(generatePerlinNoise(time: time + 100, frequency: 3.0)) * currentMagnitude * 0.005
         let zShake = Float(generatePerlinNoise(time: time + 200, frequency: 5.0)) * currentMagnitude * 0.008
         
-        // Her nesneye kuvvet uygula
         for objectNode in detectedObjects {
-            // Deprem büyüklüğüne dayalı hareket hesapla
+
             let shakeTransform = SCNMatrix4Translate(
                 objectNode.transform,
                 xShake * Float.random(in: 0.8...1.2),
@@ -427,13 +386,11 @@ class ARRealObjectSimulationViewController: UIViewController {
                 zShake * Float.random(in: 0.8...1.2)
             )
             
-            // SCNTransaction ile animasyonlu hareket
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.1
             objectNode.transform = shakeTransform
             SCNTransaction.commit()
             
-            // Bazı nesnelere rastgele dönme efekti ekle (gerçekçilik için)
             if Float.random(in: 0...1) < 0.2 * (currentMagnitude / 9.0) {
                 let rotationAngle = Float.random(in: -0.05...0.05) * currentMagnitude * 0.01
                 let rotationAxis = SCNVector3(x: Float.random(in: -1...1),
@@ -447,7 +404,6 @@ class ARRealObjectSimulationViewController: UIViewController {
             }
         }
         
-        // Kamera sallama efekti
         let cameraNode = arSceneView.pointOfView
         let originalTransform = cameraNode?.transform
         
@@ -463,29 +419,25 @@ class ARRealObjectSimulationViewController: UIViewController {
         
         SCNTransaction.commit()
         
-        // Kamerayı orijinal pozisyonuna geri getir
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.05
         cameraNode?.transform = originalTransform ?? SCNMatrix4Identity
         SCNTransaction.commit()
         
-        // Deprem yoğunluğunu güncelle (viewModel'de)
         let intensity = Double(max(abs(xShake), abs(zShake)) * 10)
         viewModel.simulationIntensity = intensity
         
-        // Haptic geri bildirim yoğunluğunu güncelle
         updateHapticIntensity(intensity: intensity)
     }
     
     private func stabilizeObjects() {
-        // Tüm nesneleri orijinal pozisyonlarına ve rotasyonlarına getir
+
         for objectNode in detectedObjects {
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.5
             objectNode.transform = objectNode.transform // Şu anki durumu koru
             SCNTransaction.commit()
             
-            // Tüm hareketleri durdur
             objectNode.removeAllActions()
         }
     }
@@ -498,13 +450,11 @@ class ARRealObjectSimulationViewController: UIViewController {
     private func createTableSurfaceNode() -> SCNNode {
         let tableNode = SCNNode()
         
-        // Masaüstü yüzeyi
         let tableGeometry = SCNBox(width: 1.2, height: 0.03, length: 0.8, chamferRadius: 0.02)
         tableGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.6, green: 0.4, blue: 0.2, alpha: 1.0)
         let tableTopNode = SCNNode(geometry: tableGeometry)
         tableTopNode.position = SCNVector3(x: 0, y: -0.2, z: -0.5)
         
-        // Masa ayakları
         let legGeometry = SCNCylinder(radius: 0.03, height: 0.7)
         legGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.5, green: 0.35, blue: 0.15, alpha: 1.0)
         
@@ -522,25 +472,21 @@ class ARRealObjectSimulationViewController: UIViewController {
     private func createComputerNode() -> SCNNode {
         let computerNode = SCNNode()
         
-        // Monitör
         let monitorScreenGeometry = SCNBox(width: 0.5, height: 0.3, length: 0.02, chamferRadius: 0.01)
         monitorScreenGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)
         let monitorScreen = SCNNode(geometry: monitorScreenGeometry)
         monitorScreen.position = SCNVector3(x: 0, y: 0, z: -0.5)
         
-        // Monitör tabanı
         let monitorBaseGeometry = SCNBox(width: 0.2, height: 0.02, length: 0.1, chamferRadius: 0.01)
         monitorBaseGeometry.firstMaterial?.diffuse.contents = UIColor.darkGray
         let monitorBase = SCNNode(geometry: monitorBaseGeometry)
         monitorBase.position = SCNVector3(x: 0, y: -0.16, z: -0.45)
         
-        // Klavye
         let keyboardGeometry = SCNBox(width: 0.4, height: 0.02, length: 0.15, chamferRadius: 0.01)
         keyboardGeometry.firstMaterial?.diffuse.contents = UIColor.lightGray
         let keyboard = SCNNode(geometry: keyboardGeometry)
         keyboard.position = SCNVector3(x: 0, y: -0.2, z: -0.3)
         
-        // Fare
         let mouseGeometry = SCNBox(width: 0.06, height: 0.02, length: 0.1, chamferRadius: 0.01)
         mouseGeometry.firstMaterial?.diffuse.contents = UIColor.lightGray
         let mouse = SCNNode(geometry: mouseGeometry)
@@ -557,13 +503,11 @@ class ARRealObjectSimulationViewController: UIViewController {
     private func createCoffeeMugNode() -> SCNNode {
         let mugNode = SCNNode()
         
-        // Bardak
         let cupGeometry = SCNCylinder(radius: 0.04, height: 0.1)
         cupGeometry.firstMaterial?.diffuse.contents = UIColor.white
         let cup = SCNNode(geometry: cupGeometry)
         cup.position = SCNVector3(x: 0.3, y: -0.15, z: -0.4)
         
-        // Kulp
         let handleGeometry = SCNTorus(ringRadius: 0.03, pipeRadius: 0.01)
         handleGeometry.firstMaterial?.diffuse.contents = UIColor.white
         let handle = SCNNode(geometry: handleGeometry)
@@ -579,7 +523,6 @@ class ARRealObjectSimulationViewController: UIViewController {
     private func createBookNode() -> SCNNode {
         let bookNode = SCNNode()
         
-        // Kitap gövdesi
         let bookGeometry = SCNBox(width: 0.2, height: 0.03, length: 0.15, chamferRadius: 0.005)
         bookGeometry.firstMaterial?.diffuse.contents = UIColor(red: 0.2, green: 0.3, blue: 0.8, alpha: 1.0)
         let book = SCNNode(geometry: bookGeometry)
@@ -593,7 +536,6 @@ class ARRealObjectSimulationViewController: UIViewController {
     private func createPenNode() -> SCNNode {
         let penNode = SCNNode()
         
-        // Kalem
         let penGeometry = SCNCylinder(radius: 0.01, height: 0.15)
         penGeometry.firstMaterial?.diffuse.contents = UIColor.blue
         let pen = SCNNode(geometry: penGeometry)
@@ -610,7 +552,6 @@ class ARRealObjectSimulationViewController: UIViewController {
         currentMagnitude = slider.value
         magnitudeLabel.text = String(format: "Deprem Büyüklüğü: %.1f", currentMagnitude)
         
-        // Büyüklüğe göre etiket rengini değiştir
         if currentMagnitude >= 7.0 {
             magnitudeLabel.textColor = .systemRed
         } else if currentMagnitude >= 5.0 {
@@ -621,10 +562,9 @@ class ARRealObjectSimulationViewController: UIViewController {
     }
     
     private func updateIntensityLabel(intensity: Double) {
-        // Deprem yoğunluğu göstergesini güncelle
+
         intensityLabel.text = String(format: "Şiddet: %.2f", intensity)
         
-        // Yoğunluğa göre etiket rengini değiştir
         if intensity > 0.7 {
             intensityLabel.backgroundColor = UIColor.systemRed.withAlphaComponent(0.8)
         } else if intensity > 0.4 {
@@ -636,14 +576,13 @@ class ARRealObjectSimulationViewController: UIViewController {
     
     // MARK: - Haptic Feedback
     private func startHapticFeedback() {
-        // İlk haptic geri bildirim
+
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.prepare()
         generator.impactOccurred()
     }
     
     private func updateHapticIntensity(intensity: Double) {
-        // Deprem yoğunluğuna göre farklı haptic feedback
         if intensity > 0.7 {
             let heavyFeedback = UIImpactFeedbackGenerator(style: .heavy)
             heavyFeedback.impactOccurred()
@@ -710,7 +649,7 @@ extension ARRealObjectSimulationViewController: ARSCNViewDelegate {
     }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
-        // AR oturumu hatası
+
         let errorMessage: String
         
         switch ARError.Code(rawValue: (error as NSError).code) {

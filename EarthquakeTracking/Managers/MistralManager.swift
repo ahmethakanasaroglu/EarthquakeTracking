@@ -6,12 +6,12 @@ class MistralManager: ObservableObject {
     @Published var isTyping: Bool = false
     @Published var error: String? = nil
     
-    // Ollama API endpoint'i (yerel kurulum için)
+
     private let baseURL = "http://localhost:11434/api/chat"
     private let modelName = "mistral"
     
     init() {
-        // Başlangıç sistem mesajı - Türkçe çıktıyı optimize eden sistem talimatı
+
         let systemMessage = MistralMessage(
             role: .system,
             content: """
@@ -32,14 +32,14 @@ class MistralManager: ObservableObject {
     }
     
     func sendMessage(_ userMessage: String) {
-        // Kullanıcı mesajını ekle
+
         let newUserMessage = MistralMessage(role: .user, content: userMessage)
         messages.append(newUserMessage)
         
-        // AI'ın yanıt verdiğini göstermek için
+
         isTyping = true
         
-        // Mesaj geçmişini oluştur
+
         var historyMessages: [[String: String]] = []
         for message in messages {
             historyMessages.append([
@@ -48,7 +48,7 @@ class MistralManager: ObservableObject {
             ])
         }
         
-        // Daha iyi Türkçe cevaplar için kullanıcı mesajını yönlendirelim
+
         let userInstruction = """
             Soru: \(userMessage)
             
@@ -59,20 +59,19 @@ class MistralManager: ObservableObject {
         
         historyMessages[historyMessages.count - 1]["content"] = userInstruction
         
-        // API isteği için gerekli verileri oluştur
+
         let requestBody: [String: Any] = [
             "model": modelName,
             "messages": historyMessages,
             "stream": false,
             "options": [
-                "temperature": 0.3,    // Daha tutarlı cevaplar için düşük değer
-                "max_tokens": 120,     // Kısa cevaplar için
-                "top_p": 0.7,          // Daha az rastgelelik
-                "stop": ["English:", "İngilizce:"]  // İngilizce yanıtları durdur
+                "temperature": 0.3,
+                "max_tokens": 120,
+                "top_p": 0.7,
+                "stop": ["English:", "İngilizce:"]
             ]
         ]
         
-        // API çağrısını gerçekleştir
         sendOllamaRequest(requestBody)
     }
     
@@ -85,7 +84,7 @@ class MistralManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30 // 30 saniyelik timeout
+        request.timeoutInterval = 30
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
@@ -100,13 +99,11 @@ class MistralManager: ObservableObject {
             DispatchQueue.main.async {
                 self.isTyping = false
                 
-                // Hata kontrolü
                 if let error = error {
                     self.handleError("Bağlantı hatası: \(error.localizedDescription)")
                     return
                 }
                 
-                // Veri kontrolü
                 guard let data = data else {
                     self.handleError("Veri alınamadı")
                     return
@@ -114,17 +111,15 @@ class MistralManager: ObservableObject {
                 
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        // Hata kontrolü
+
                         if let errorMessage = json["error"] as? String {
                             self.handleError("Yapay zeka hatası")
                             return
                         }
                         
-                        // Yanıt mesajını al
                         if let message = json["message"] as? [String: Any],
                            let content = message["content"] as? String {
                             
-                            // Cevabı işle ve düzelt
                             let processedContent = self.processTurkishResponse(content)
                             let assistantMessage = MistralMessage(role: .assistant, content: processedContent)
                             self.messages.append(assistantMessage)
@@ -143,11 +138,9 @@ class MistralManager: ObservableObject {
         task.resume()
     }
     
-    // Türkçe yanıtları iyileştirme ve düzenleme
     private func processTurkishResponse(_ content: String) -> String {
         var result = content.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // "Türkçe:" veya "Turkish:" gibi başlangıçları kaldır
         if result.lowercased().hasPrefix("türkçe:") {
             result = String(result.dropFirst(7)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -156,12 +149,11 @@ class MistralManager: ObservableObject {
             result = String(result.dropFirst(8)).trimmingCharacters(in: .whitespacesAndNewlines)
         }
         
-        // İngilizce kelimeleri ve kısımları temizleme (basit bir yaklaşım)
         let lines = result.components(separatedBy: "\n")
         var cleanedLines: [String] = []
         
         for line in lines {
-            // İngilizce satırları atla
+
             if line.range(of: "\\b[a-zA-Z]{4,}\\b", options: .regularExpression) != nil &&
                line.range(of: "[çğıöşüÇĞİÖŞÜ]", options: .regularExpression) == nil {
                 continue
@@ -171,7 +163,6 @@ class MistralManager: ObservableObject {
         
         result = cleanedLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // Çok uzun cevapları kısalt
         if result.count > 200 {
             let sentences = result.components(separatedBy: ".")
             var shortAnswer = ""
@@ -192,7 +183,6 @@ class MistralManager: ObservableObject {
             result = shortAnswer.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         
-        // Noktalama ve boşluk düzeltmeleri
         result = result.replacingOccurrences(of: " ,", with: ",")
         result = result.replacingOccurrences(of: " .", with: ".")
         result = result.replacingOccurrences(of: "..", with: ".")
@@ -205,7 +195,6 @@ class MistralManager: ObservableObject {
         error = message
         isTyping = false
         
-        // Kullanıcıya dostane hata mesajı göster
         let errorMessage = MistralMessage(
             role: .assistant,
             content: "Üzgünüm, şu anda yanıt veremiyorum. Lütfen internet bağlantınızı ve Mistral modelinin çalıştığını kontrol edin."
@@ -216,7 +205,6 @@ class MistralManager: ObservableObject {
     func clearConversation() {
         messages.removeAll()
         
-        // Sistem mesajını tekrar ekle
         let systemMessage = MistralMessage(
             role: .system,
             content: """

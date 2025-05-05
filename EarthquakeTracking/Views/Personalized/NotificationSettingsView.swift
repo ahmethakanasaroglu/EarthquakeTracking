@@ -188,14 +188,12 @@ class NotificationSettingsViewController: UIViewController {
         title = "Uyarı Ayarları"
         view.backgroundColor = .systemBackground
         
-        // Create the view hierarchy
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
         contentView.addSubview(headerLabel)
         contentView.addSubview(descriptionLabel)
         
-        // Notifications Switch
         let notificationsSwitchStack = UIStackView(arrangedSubviews: [notificationsLabel, notificationsSwitch])
         notificationsSwitchStack.translatesAutoresizingMaskIntoConstraints = false
         notificationsSwitchStack.axis = .horizontal
@@ -203,7 +201,6 @@ class NotificationSettingsViewController: UIViewController {
         notificationsSwitchStack.alignment = .center
         contentView.addSubview(notificationsSwitchStack)
         
-        // Magnitude Slider
         let magnitudeSliderStack = UIStackView(arrangedSubviews: [magnitudeLabel, magnitudeValueLabel])
         magnitudeSliderStack.translatesAutoresizingMaskIntoConstraints = false
         magnitudeSliderStack.axis = .horizontal
@@ -212,7 +209,6 @@ class NotificationSettingsViewController: UIViewController {
         contentView.addSubview(magnitudeSliderStack)
         contentView.addSubview(magnitudeSlider)
         
-        // Locations Section
         let locationsLabel = UILabel()
         locationsLabel.translatesAutoresizingMaskIntoConstraints = false
         locationsLabel.text = "İzlenen Konumlar"
@@ -223,7 +219,6 @@ class NotificationSettingsViewController: UIViewController {
         contentView.addSubview(locationsTableView)
         contentView.addSubview(addLocationButton)
         
-        // Map and Form for Adding Locations
         contentView.addSubview(mapView)
         contentView.addSubview(locationNameTextField)
         
@@ -234,7 +229,6 @@ class NotificationSettingsViewController: UIViewController {
         locationButtonsStack.distribution = .fillEqually
         contentView.addSubview(locationButtonsStack)
         
-        // Setup Constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -294,13 +288,11 @@ class NotificationSettingsViewController: UIViewController {
             locationButtonsStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
         
-        // Set Auto Layout priority to ensure proper scrolling
         locationsTableView.setContentHuggingPriority(.defaultLow, for: .vertical)
         locationsTableView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
     }
     
     private func setupBindings() {
-        // Monitor viewModel changes for UI updates
         viewModel.$monitoredLocations
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -316,7 +308,6 @@ class NotificationSettingsViewController: UIViewController {
             }
             .store(in: &cancellables)
             
-        // Bildirim durumu değiştiğinde UI'ı güncelle
         viewModel.$enableNotifications
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isEnabled in
@@ -334,23 +325,19 @@ class NotificationSettingsViewController: UIViewController {
         locationsTableView.reloadData()
         updateMapWithLocations()
         
-        // Bildirim durumuna göre UI'ı güncelle
         updateUIBasedOnNotificationState(isEnabled: viewModel.enableNotifications)
     }
     
     private func updateUIBasedOnNotificationState(isEnabled: Bool) {
-        // Bildirimler kapalıyken ilgili kontrolleri devre dışı bırak
         magnitudeSlider.isEnabled = isEnabled
         magnitudeValueLabel.alpha = isEnabled ? 1.0 : 0.5
         magnitudeLabel.alpha = isEnabled ? 1.0 : 0.5
         
-        // Konum bölümünü etkinleştir/devre dışı bırak
         locationsTableView.alpha = isEnabled ? 1.0 : 0.5
         locationsTableView.isUserInteractionEnabled = isEnabled
         addLocationButton.isEnabled = isEnabled
         addLocationButton.alpha = isEnabled ? 1.0 : 0.5
         
-        // Bildirimler kapalıyken açıklayıcı metin ekle
         if !isEnabled {
             let noNotificationsLabel = UILabel()
             noNotificationsLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -360,14 +347,12 @@ class NotificationSettingsViewController: UIViewController {
             noNotificationsLabel.textAlignment = .center
             noNotificationsLabel.numberOfLines = 0
             
-            // Mevcut uyarı etiketi varsa kaldır
             for subview in contentView.subviews {
                 if let label = subview as? UILabel, label.tag == 999 {
                     label.removeFromSuperview()
                 }
             }
             
-            // Yeni uyarı etiketini ekle
             noNotificationsLabel.tag = 999
             contentView.addSubview(noNotificationsLabel)
             
@@ -377,7 +362,6 @@ class NotificationSettingsViewController: UIViewController {
                 noNotificationsLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
             ])
         } else {
-            // Bildirimler açıksa uyarı etiketini kaldır
             for subview in contentView.subviews {
                 if let label = subview as? UILabel, label.tag == 999 {
                     label.removeFromSuperview()
@@ -387,10 +371,8 @@ class NotificationSettingsViewController: UIViewController {
     }
     
     private func updateMapWithLocations() {
-        // Clear existing annotations
         mapView.removeAnnotations(mapView.annotations)
         
-        // Add annotations for monitored locations
         let annotations = viewModel.monitoredLocations.map { location -> MKPointAnnotation in
             let annotation = MKPointAnnotation()
             annotation.coordinate = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
@@ -400,11 +382,9 @@ class NotificationSettingsViewController: UIViewController {
         
         mapView.addAnnotations(annotations)
         
-        // If we have locations, zoom to show all of them
         if !viewModel.monitoredLocations.isEmpty {
             mapView.showAnnotations(annotations, animated: true)
         } else if let userLocation = viewModel.userLocation {
-            // Otherwise, zoom to user location
             let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
             mapView.setRegion(region, animated: true)
         }
@@ -418,17 +398,14 @@ class NotificationSettingsViewController: UIViewController {
         addLocationButton.isHidden = isAdding
         
         if isAdding {
-            // Reset form
             locationNameTextField.text = ""
             
-            // Add pin to center of map
             if let userLocation = viewModel.userLocation {
                 let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
                 mapView.setRegion(region, animated: true)
                 
                 viewModel.newLocationCoordinate = userLocation
                 
-                // Add temporary annotation
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = userLocation
                 annotation.title = "Yeni Konum"
@@ -443,7 +420,6 @@ class NotificationSettingsViewController: UIViewController {
         viewModel.enableNotifications = sender.isOn
         viewModel.saveUserPreferences()
         
-        // Bildirim durumuna göre UI'ı güncelle
         updateUIBasedOnNotificationState(isEnabled: sender.isOn)
         
         if sender.isOn {
@@ -467,7 +443,6 @@ class NotificationSettingsViewController: UIViewController {
         let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
         viewModel.newLocationCoordinate = coordinate
         
-        // Update pin position
         mapView.removeAnnotations(mapView.annotations)
         let annotation = MKPointAnnotation()
         annotation.coordinate = coordinate
@@ -496,7 +471,6 @@ class NotificationSettingsViewController: UIViewController {
 // MARK: - UITableViewDelegate, UITableViewDataSource
 extension NotificationSettingsViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // Show placeholder if no locations
         return max(viewModel.monitoredLocations.count, 1)
     }
     
@@ -504,7 +478,6 @@ extension NotificationSettingsViewController: UITableViewDelegate, UITableViewDa
         let cell = tableView.dequeueReusableCell(withIdentifier: "MonitoredLocationCell", for: indexPath) as! MonitoredLocationCell
         
         if viewModel.monitoredLocations.isEmpty {
-            // Show placeholder message
             cell.configure(with: nil)
         } else {
             let location = viewModel.monitoredLocations[indexPath.row]
@@ -585,13 +558,11 @@ class MonitoredLocationCell: UITableViewCell {
             coordinateLabel.text = String(format: "%.4f, %.4f", location.latitude, location.longitude)
             thresholdLabel.text = String(format: "M %.1f+", location.notificationThreshold)
             
-            // Show normal cell styling
             nameLabel.textColor = .label
             coordinateLabel.isHidden = false
             thresholdLabel.isHidden = false
             self.selectionStyle = .default
         } else {
-            // Placeholder for empty state
             nameLabel.text = "Henüz izlenen konum yok"
             nameLabel.textColor = .secondaryLabel
             coordinateLabel.isHidden = true

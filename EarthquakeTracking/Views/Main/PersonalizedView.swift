@@ -31,7 +31,6 @@ class PersonalizedViewController: UIViewController {
         view.backgroundColor = AppTheme.primaryColor
         view.layer.cornerRadius = 16
         
-        // Add shadow
         view.layer.shadowColor = AppTheme.primaryColor.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 4)
         view.layer.shadowRadius = 8
@@ -91,7 +90,7 @@ class PersonalizedViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Risk data'sını yükle
+
         viewModel.loadRiskDataForCurrentLocation()
     }
     
@@ -100,11 +99,9 @@ class PersonalizedViewController: UIViewController {
         title = "Kişiselleştirilmiş"
         view.backgroundColor = AppTheme.backgroundColor
         
-        // Scroll View Hierarchy
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
-        // Content View Hierarchy
         contentView.addSubview(headerView)
         headerView.addSubview(headerIconView)
         headerView.addSubview(headerLabel)
@@ -113,10 +110,8 @@ class PersonalizedViewController: UIViewController {
         contentView.addSubview(riskIndicatorView)
         contentView.addSubview(featuresContainerView)
         
-        // Setup Features
         setupFeatures()
         
-        // Setup Constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -129,7 +124,6 @@ class PersonalizedViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             
-            // Header View
             headerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
@@ -148,12 +142,10 @@ class PersonalizedViewController: UIViewController {
             headerDescriptionLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
             headerDescriptionLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -20),
             
-            // Risk Indicator View
             riskIndicatorView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 24),
             riskIndicatorView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             riskIndicatorView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             
-            // Features Container
             featuresContainerView.topAnchor.constraint(equalTo: riskIndicatorView.bottomAnchor, constant: 24),
             featuresContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             featuresContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
@@ -178,7 +170,6 @@ class PersonalizedViewController: UIViewController {
             featuresStackView.bottomAnchor.constraint(equalTo: featuresContainerView.bottomAnchor)
         ])
         
-        // Feature 1: Notification Settings
         let notificationFeature = createFeatureCard(
             title: "Kişiselleştirilmiş Uyarı Sistemi",
             description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin.",
@@ -187,7 +178,6 @@ class PersonalizedViewController: UIViewController {
             action: #selector(openNotificationSettings)
         )
         
-        // Feature 2: Earthquake Simulation
         let simulationFeature = createFeatureCard(
             title: "Deprem Simülasyonu",
             description: "Farklı büyüklüklerdeki depremlerin etkilerini deneyimleyin.",
@@ -196,7 +186,6 @@ class PersonalizedViewController: UIViewController {
             action: #selector(openSimulation)
         )
         
-        // Feature 3: AR Home Safety Scan
         let arScanFeature = createFeatureCard(
             title: "AR Ev Güvenliği Taraması",
             description: "Artırılmış gerçeklik ile evinizin deprem güvenliğini analiz edin.",
@@ -205,7 +194,6 @@ class PersonalizedViewController: UIViewController {
             action: #selector(openARScan)
         )
         
-        // Feature 4: Risk Model
         let riskModelFeature = createFeatureCard(
             title: "Deprem Riski Tahmin Modeli",
             description: "Yapay zeka ile bölgenizdeki deprem riskini görüntüleyin.",
@@ -214,7 +202,6 @@ class PersonalizedViewController: UIViewController {
             action: #selector(openRiskModel)
         )
         
-        // Add features to stack view
         featuresStackView.addArrangedSubview(notificationFeature)
         featuresStackView.addArrangedSubview(simulationFeature)
         featuresStackView.addArrangedSubview(arScanFeature)
@@ -226,37 +213,31 @@ class PersonalizedViewController: UIViewController {
         cardView.translatesAutoresizingMaskIntoConstraints = false
         AppTheme.applyCardStyle(to: cardView)
         
-        // Make the entire card clickable
         let tapGesture = UITapGestureRecognizer(target: self, action: action)
         cardView.addGestureRecognizer(tapGesture)
         cardView.isUserInteractionEnabled = true
         
-        // Icon container
         let iconContainer = UIView()
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
         iconContainer.backgroundColor = color
         iconContainer.layer.cornerRadius = 25
         
-        // Add shadow to icon
         iconContainer.layer.shadowColor = color.cgColor
         iconContainer.layer.shadowOffset = CGSize(width: 0, height: 3)
         iconContainer.layer.shadowRadius = 5
         iconContainer.layer.shadowOpacity = 0.4
         
-        // Icon
         let iconImageView = UIImageView(image: UIImage(systemName: iconName))
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.tintColor = .white
         
-        // Title
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
         titleLabel.textColor = AppTheme.titleTextColor
         
-        // Description
         let descriptionLabel = UILabel()
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         descriptionLabel.text = description
@@ -264,20 +245,17 @@ class PersonalizedViewController: UIViewController {
         descriptionLabel.textColor = AppTheme.bodyTextColor
         descriptionLabel.numberOfLines = 0
         
-        // Arrow indicator
         let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         arrowImageView.contentMode = .scaleAspectFit
         arrowImageView.tintColor = color
         
-        // Add views to hierarchy
         iconContainer.addSubview(iconImageView)
         cardView.addSubview(iconContainer)
         cardView.addSubview(titleLabel)
         cardView.addSubview(descriptionLabel)
         cardView.addSubview(arrowImageView)
         
-        // Set constraints
         NSLayoutConstraint.activate([
             cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
             
@@ -317,7 +295,7 @@ class PersonalizedViewController: UIViewController {
     }
     
     private func setupBindings() {
-        // Risk level changes
+
         viewModel.$riskLevelForCurrentLocation
             .receive(on: DispatchQueue.main)
             .sink { [weak self] riskLevel in
@@ -325,7 +303,6 @@ class PersonalizedViewController: UIViewController {
             }
             .store(in: &cancellables)
         
-        // Loading state
         viewModel.$isLoadingRiskData
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isLoading in
@@ -361,10 +338,8 @@ extension PersonalizedViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         
-        // ViewModel'e kullanıcı konumunu güncelle
         viewModel.userLocation = location.coordinate
         
-        // Konumu aldıktan sonra sürekli güncellemeyi durdur (pil tasarrufu için)
         manager.stopUpdatingLocation()
     }
     
@@ -429,22 +404,18 @@ class RiskIndicatorView: UIView {
         AppTheme.applyCardStyle(to: self)
         backgroundColor = AppTheme.backgroundColor
         
-        // Container
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
-        // Title
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Bölge Deprem Riski"
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
         titleLabel.textColor = AppTheme.titleTextColor
         
-        // Risk Label
         riskLabel.translatesAutoresizingMaskIntoConstraints = false
         riskLabel.text = "Hesaplanıyor..."
         riskLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         riskLabel.textColor = AppTheme.bodyTextColor
         
-        // Risk Bar
         riskBar.translatesAutoresizingMaskIntoConstraints = false
         riskBar.progressTintColor = AppTheme.primaryColor
         riskBar.trackTintColor = UIColor.systemGray5
@@ -452,25 +423,21 @@ class RiskIndicatorView: UIView {
         riskBar.layer.cornerRadius = 4
         riskBar.clipsToBounds = true
         
-        // Location Icon
         locationIconView.translatesAutoresizingMaskIntoConstraints = false
         locationIconView.image = UIImage(systemName: "location.circle.fill")
         locationIconView.contentMode = .scaleAspectFit
         locationIconView.tintColor = AppTheme.primaryColor
         
-        // Location Label
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.text = "Şu anki konumunuz"
         locationLabel.font = UIFont.systemFont(ofSize: 14)
         locationLabel.textColor = AppTheme.bodyTextColor
         
-        // Activity Indicator
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.hidesWhenStopped = true
         activityIndicator.color = AppTheme.primaryColor
         activityIndicator.startAnimating()
         
-        // Add to hierarchy
         addSubview(containerView)
         containerView.addSubview(titleLabel)
         containerView.addSubview(riskLabel)
@@ -479,7 +446,6 @@ class RiskIndicatorView: UIView {
         containerView.addSubview(locationLabel)
         containerView.addSubview(activityIndicator)
         
-        // Set constraints
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: topAnchor, constant: 16),
             containerView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
@@ -519,7 +485,6 @@ class RiskIndicatorView: UIView {
     func updateRiskLevel(_ riskLevel: RiskLevel) {
         riskLabel.text = riskLevel.rawValue
         
-        // Set color and progress based on risk level
         switch riskLevel {
         case .high:
             riskLabel.textColor = AppTheme.errorColor
@@ -539,7 +504,6 @@ class RiskIndicatorView: UIView {
             riskBar.progress = 0.1
         }
         
-        // Animate progress change
         UIView.animate(withDuration: 0.5) {
             self.layoutIfNeeded()
         }

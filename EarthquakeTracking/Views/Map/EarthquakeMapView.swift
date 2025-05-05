@@ -276,7 +276,6 @@ class EarthquakeMapViewController: UIViewController {
         view.addSubview(mapTypeButton)
         view.addSubview(clusterControlView)
         
-        // Popup View Hierarchy
         popupView.addSubview(closeButton)
         popupView.addSubview(magnitudeCircleView)
         magnitudeCircleView.addSubview(magnitudeLabel)
@@ -295,7 +294,6 @@ class EarthquakeMapViewController: UIViewController {
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
-            // Map Controls
             mapTypeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             mapTypeButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             mapTypeButton.widthAnchor.constraint(equalToConstant: 40),
@@ -305,18 +303,15 @@ class EarthquakeMapViewController: UIViewController {
             clusterControlView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             clusterControlView.heightAnchor.constraint(equalToConstant: 40),
             
-            // Popup View
             popupView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             popupView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             popupView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             
-            // Close Button
             closeButton.topAnchor.constraint(equalTo: popupView.topAnchor, constant: 12),
             closeButton.trailingAnchor.constraint(equalTo: popupView.trailingAnchor, constant: -12),
             closeButton.widthAnchor.constraint(equalToConstant: 24),
             closeButton.heightAnchor.constraint(equalToConstant: 24),
             
-            // Magnitude Circle
             magnitudeCircleView.leadingAnchor.constraint(equalTo: popupView.leadingAnchor, constant: 16),
             magnitudeCircleView.topAnchor.constraint(equalTo: popupView.topAnchor, constant: 16),
             magnitudeCircleView.widthAnchor.constraint(equalToConstant: 50),
@@ -325,27 +320,22 @@ class EarthquakeMapViewController: UIViewController {
             magnitudeLabel.centerXAnchor.constraint(equalTo: magnitudeCircleView.centerXAnchor),
             magnitudeLabel.centerYAnchor.constraint(equalTo: magnitudeCircleView.centerYAnchor),
             
-            // Location Label
             locationLabel.topAnchor.constraint(equalTo: popupView.topAnchor, constant: 16),
             locationLabel.leadingAnchor.constraint(equalTo: magnitudeCircleView.trailingAnchor, constant: 16),
             locationLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -8),
             
-            // Date Time Label
             dateTimeLabel.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 8),
             dateTimeLabel.leadingAnchor.constraint(equalTo: magnitudeCircleView.trailingAnchor, constant: 16),
             dateTimeLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -8),
             
-            // Depth Info View
             depthInfoView.topAnchor.constraint(equalTo: dateTimeLabel.bottomAnchor, constant: 16),
             depthInfoView.leadingAnchor.constraint(equalTo: popupView.leadingAnchor, constant: 16),
             depthInfoView.trailingAnchor.constraint(equalTo: popupView.centerXAnchor, constant: -8),
             
-            // Coordinates Info View
             coordinatesInfoView.topAnchor.constraint(equalTo: dateTimeLabel.bottomAnchor, constant: 16),
             coordinatesInfoView.leadingAnchor.constraint(equalTo: popupView.centerXAnchor, constant: 8),
             coordinatesInfoView.trailingAnchor.constraint(equalTo: popupView.trailingAnchor, constant: -16),
             
-            // Details Button
             detailsButton.topAnchor.constraint(equalTo: depthInfoView.bottomAnchor, constant: 16),
             detailsButton.centerXAnchor.constraint(equalTo: popupView.centerXAnchor),
             detailsButton.bottomAnchor.constraint(equalTo: popupView.bottomAnchor, constant: -16)
@@ -432,13 +422,10 @@ class EarthquakeMapViewController: UIViewController {
         magnitudeLabel.text = magnitude
         magnitudeCircleView.backgroundColor = AppTheme.magnitudeColor(for: magValue)
         
-        // Update depth info
         depthInfoView.setValue("\(earthquake.depth_km) km")
         
-        // Update coordinates info
         coordinatesInfoView.setValue("\(earthquake.latitude.prefix(6)), \(earthquake.longitude.prefix(6))")
         
-        // Show popup with animation
         popupView.isHidden = false
         popupView.alpha = 0
         popupView.transform = CGAffineTransform(rotationAngle: 50)
@@ -526,7 +513,6 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
             annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
             annotationView?.canShowCallout = false
             
-            // Add fade-in animation
             annotationView?.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
             UIView.animate(withDuration: 0.3) {
                 annotationView?.transform = CGAffineTransform.identity
@@ -535,11 +521,9 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
             annotationView?.annotation = annotation
         }
         
-        // Style the marker based on magnitude
         let magnitude = viewModel.getMagnitude(for: annotation.earthquake)
         annotationView?.markerTintColor = AppTheme.magnitudeColor(for: magnitude)
         
-        // Add a custom glyph for high magnitude earthquakes
         if magnitude >= 5.0 {
             annotationView?.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
         } else if magnitude >= 4.0 {
@@ -591,30 +575,26 @@ class InfoRowView: UIView {
     }
     
     private func setupView(iconName: String, title: String) {
-        // Icon
+
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.image = UIImage(systemName: iconName)
         iconImageView.tintColor = AppTheme.primaryColor
         
-        // Title
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title + ":"
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
         titleLabel.textColor = AppTheme.bodyTextColor
         
-        // Value
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
         valueLabel.text = "—"
         valueLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         valueLabel.textColor = AppTheme.titleTextColor
         
-        // Add subviews
         addSubview(iconImageView)
         addSubview(titleLabel)
         addSubview(valueLabel)
         
-        // Set constraints
         NSLayoutConstraint.activate([
             iconImageView.leadingAnchor.constraint(equalTo: leadingAnchor),
             iconImageView.centerYAnchor.constraint(equalTo: centerYAnchor),

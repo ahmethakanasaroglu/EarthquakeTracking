@@ -78,10 +78,8 @@ class EarthquakeListViewController: UIViewController {
             emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
         ])
         
-        // Add sort button to navigation bar
         let sortButton = UIBarButtonItem(image: UIImage(systemName: "arrow.up.arrow.down"), style: .plain, target: self, action: #selector(showSortOptions))
         
-        // Add map button to navigation bar
         let mapButton = UIBarButtonItem(image: UIImage(systemName: "map"), style: .plain, target: self, action: #selector(showMap))
         
         navigationItem.rightBarButtonItems = [sortButton, mapButton]
@@ -120,7 +118,7 @@ class EarthquakeListViewController: UIViewController {
     
     private func fetchEarthquakes() {
         viewModel.fetchEarthquakes()
-        // İlk yüklemede verileri otomatik olarak tarihe göre sırala
+
         viewModel.applySortOnLoad()
     }
     
@@ -146,7 +144,6 @@ class EarthquakeListViewController: UIViewController {
         
         let cancelAction = UIAlertAction(title: "İptal", style: .cancel)
         
-        // Add icons to the actions
         dateAction.setValue(UIImage(systemName: "calendar"), forKey: "image")
         magnitudeAction.setValue(UIImage(systemName: "waveform.path.ecg"), forKey: "image")
         
@@ -196,15 +193,12 @@ extension EarthquakeListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        // Get selected earthquake
         let selectedEarthquake = viewModel.earthquakes[indexPath.row]
         
-        // Show earthquake on map with zoom to its location
         let mapViewController = EarthquakeMapViewController()
         
-        // Pass the selected earthquake to focus on
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Using a small delay to make sure map is loaded
+
             if let latitude = Double(selectedEarthquake.latitude),
                let longitude = Double(selectedEarthquake.longitude) {
                 let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -215,10 +209,9 @@ extension EarthquakeListViewController: UITableViewDelegate {
         navigationController?.pushViewController(mapViewController, animated: true)
     }
     
-    // Add swipe action for details
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let detailsAction = UIContextualAction(style: .normal, title: "Detaylar") { [weak self] (_, _, completion) in
-            // Show details for the earthquake
+
             self?.showEarthquakeDetails(self?.viewModel.earthquakes[indexPath.row])
             completion(true)
         }
@@ -262,23 +255,19 @@ class ModernEarthquakeCell: UITableViewCell {
         selectionStyle = .default
         backgroundColor = .clear
         
-        // Container View
         containerView.translatesAutoresizingMaskIntoConstraints = false
         AppTheme.applyCardStyle(to: containerView)
         containerView.layer.shadowOpacity = 0.1
         
-        // Location Label
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         locationLabel.textColor = AppTheme.titleTextColor
         locationLabel.numberOfLines = 2
         
-        // Date Time Label
         dateTimeLabel.translatesAutoresizingMaskIntoConstraints = false
         dateTimeLabel.font = UIFont.systemFont(ofSize: 14)
         dateTimeLabel.textColor = AppTheme.bodyTextColor
         
-        // Magnitude Circle View
         magnitudeCircleView.translatesAutoresizingMaskIntoConstraints = false
         magnitudeCircleView.backgroundColor = AppTheme.primaryColor
         magnitudeCircleView.layer.cornerRadius = 26
@@ -287,24 +276,20 @@ class ModernEarthquakeCell: UITableViewCell {
         magnitudeCircleView.layer.shadowRadius = 4
         magnitudeCircleView.layer.shadowOpacity = 0.3
         
-        // Magnitude Label
         magnitudeLabel.translatesAutoresizingMaskIntoConstraints = false
         magnitudeLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
         magnitudeLabel.textColor = .white
         magnitudeLabel.textAlignment = .center
         
-        // Info Stack View
         infoStackView.translatesAutoresizingMaskIntoConstraints = false
         infoStackView.axis = .horizontal
         infoStackView.spacing = 8
         infoStackView.alignment = .center
         
-        // Depth Label
         depthLabel.translatesAutoresizingMaskIntoConstraints = false
         depthLabel.font = UIFont.systemFont(ofSize: 14)
         depthLabel.textColor = AppTheme.bodyTextColor
         
-        // Map Preview Image
         mapPreviewImageView.translatesAutoresizingMaskIntoConstraints = false
         mapPreviewImageView.contentMode = .scaleAspectFill
         mapPreviewImageView.layer.cornerRadius = 6
@@ -313,7 +298,6 @@ class ModernEarthquakeCell: UITableViewCell {
         mapPreviewImageView.tintColor = AppTheme.primaryColor
         mapPreviewImageView.backgroundColor = AppTheme.tertiaryBackgroundColor
         
-        // Add depth to info stack view
         let depthIconView = UIImageView(image: UIImage(systemName: "arrow.down"))
         depthIconView.tintColor = AppTheme.primaryColor
         depthIconView.contentMode = .scaleAspectFit
@@ -326,7 +310,6 @@ class ModernEarthquakeCell: UITableViewCell {
         
         infoStackView.addArrangedSubview(depthStack)
         
-        // Add subviews to container
         containerView.addSubview(mapPreviewImageView)
         containerView.addSubview(locationLabel)
         containerView.addSubview(dateTimeLabel)
@@ -334,10 +317,8 @@ class ModernEarthquakeCell: UITableViewCell {
         magnitudeCircleView.addSubview(magnitudeLabel)
         containerView.addSubview(infoStackView)
         
-        // Add container to content view
         contentView.addSubview(containerView)
         
-        // Setup constraints
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -390,7 +371,6 @@ class ModernEarthquakeCell: UITableViewCell {
         magnitudeLabel.text = magnitude
         magnitudeCircleView.backgroundColor = AppTheme.magnitudeColor(for: magValue)
         
-        // Make larger magnitudes appear larger
         if magValue >= 5.0 {
             magnitudeLabel.font = UIFont.systemFont(ofSize: 20, weight: .heavy)
         } else {
@@ -399,7 +379,6 @@ class ModernEarthquakeCell: UITableViewCell {
         
         depthLabel.text = "\(earthquake.depth_km) km"
         
-        // Add subtle animation
         containerView.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         UIView.animate(withDuration: 0.2) {
             self.containerView.transform = CGAffineTransform.identity
@@ -432,13 +411,11 @@ class EarthquakeDetailsViewController: UIViewController {
         title = "Deprem Detayları"
         view.backgroundColor = AppTheme.backgroundColor
         
-        // Map View
         mapView.translatesAutoresizingMaskIntoConstraints = false
         mapView.layer.cornerRadius = 16
         mapView.clipsToBounds = true
         view.addSubview(mapView)
         
-        // Content View (will contain all the earthquake details)
         contentView.translatesAutoresizingMaskIntoConstraints = false
         contentView.backgroundColor = AppTheme.backgroundColor
         contentView.layer.cornerRadius = 16
@@ -449,10 +426,8 @@ class EarthquakeDetailsViewController: UIViewController {
         contentView.layer.shadowOpacity = 0.1
         view.addSubview(contentView)
         
-        // Add details to the content view
         setupContentView()
         
-        // Add the earthquake pin to the map
         if let latitude = Double(earthquake.latitude),
            let longitude = Double(earthquake.longitude) {
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -465,7 +440,6 @@ class EarthquakeDetailsViewController: UIViewController {
             mapView.addAnnotation(annotation)
         }
         
-        // Setup constraints
         NSLayoutConstraint.activate([
             mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -480,7 +454,7 @@ class EarthquakeDetailsViewController: UIViewController {
     }
     
     private func setupContentView() {
-        // Create a scrollable content view for details
+
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(scrollView)
@@ -506,7 +480,6 @@ class EarthquakeDetailsViewController: UIViewController {
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
         
-        // Add location information with a header
         addSectionToStackView(
             stackView: stackView,
             sectionTitle: "Konum",
@@ -514,7 +487,6 @@ class EarthquakeDetailsViewController: UIViewController {
             imageName: "mappin.and.ellipse"
         )
         
-        // Add date and time information
         addSectionToStackView(
             stackView: stackView,
             sectionTitle: "Tarih ve Saat",
@@ -522,7 +494,6 @@ class EarthquakeDetailsViewController: UIViewController {
             imageName: "calendar"
         )
         
-        // Add coordinates
         addSectionToStackView(
             stackView: stackView,
             sectionTitle: "Koordinatlar",
@@ -530,7 +501,6 @@ class EarthquakeDetailsViewController: UIViewController {
             imageName: "location.circle"
         )
         
-        // Add magnitude information
         let magnitudeValue = getMagnitudeValue()
         let magnitudeString = String(format: "ML: %.1f", magnitudeValue)
         
@@ -542,7 +512,6 @@ class EarthquakeDetailsViewController: UIViewController {
             detailsColor: AppTheme.magnitudeColor(for: magnitudeValue)
         )
         
-        // Add depth information
         addSectionToStackView(
             stackView: stackView,
             sectionTitle: "Derinlik",
@@ -550,31 +519,27 @@ class EarthquakeDetailsViewController: UIViewController {
             imageName: "arrow.down.circle"
         )
         
-        // Add a bottom section with explanation about earthquake magnitudes
         addInformationSection(stackView: stackView)
     }
     
     private func addSectionToStackView(stackView: UIStackView, sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) {
-        // Create section container
+
         let sectionView = UIView()
         sectionView.translatesAutoresizingMaskIntoConstraints = false
         sectionView.backgroundColor = AppTheme.secondaryBackgroundColor
         sectionView.layer.cornerRadius = 12
-        
-        // Section icon
+
         let iconView = UIImageView(image: UIImage(systemName: imageName))
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.contentMode = .scaleAspectFit
         iconView.tintColor = AppTheme.primaryColor
         
-        // Section title
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = sectionTitle
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
         titleLabel.textColor = AppTheme.bodyTextColor
         
-        // Section content
         let contentLabel = UILabel()
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
         contentLabel.text = content
@@ -582,12 +547,10 @@ class EarthquakeDetailsViewController: UIViewController {
         contentLabel.textColor = detailsColor ?? AppTheme.titleTextColor
         contentLabel.numberOfLines = 0
         
-        // Add views to section container
         sectionView.addSubview(iconView)
         sectionView.addSubview(titleLabel)
         sectionView.addSubview(contentLabel)
         
-        // Set constraints
         NSLayoutConstraint.activate([
             iconView.topAnchor.constraint(equalTo: sectionView.topAnchor, constant: 16),
             iconView.leadingAnchor.constraint(equalTo: sectionView.leadingAnchor, constant: 16),
@@ -604,31 +567,27 @@ class EarthquakeDetailsViewController: UIViewController {
             contentLabel.bottomAnchor.constraint(equalTo: sectionView.bottomAnchor, constant: -16)
         ])
         
-        // Add to stack view
         stackView.addArrangedSubview(sectionView)
     }
     
     private func addInformationSection(stackView: UIStackView) {
-        // Information card
+
         let infoView = UIView()
         infoView.translatesAutoresizingMaskIntoConstraints = false
         infoView.backgroundColor = AppTheme.tertiaryBackgroundColor
         infoView.layer.cornerRadius = 12
         
-        // Information icon
         let infoIcon = UIImageView(image: UIImage(systemName: "info.circle.fill"))
         infoIcon.translatesAutoresizingMaskIntoConstraints = false
         infoIcon.contentMode = .scaleAspectFit
         infoIcon.tintColor = AppTheme.primaryColor
         
-        // Information title
         let infoTitle = UILabel()
         infoTitle.translatesAutoresizingMaskIntoConstraints = false
         infoTitle.text = "Büyüklük Ölçeği Hakkında"
         infoTitle.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         infoTitle.textColor = AppTheme.primaryColor
         
-        // Information content
         let infoContent = UILabel()
         infoContent.translatesAutoresizingMaskIntoConstraints = false
         infoContent.text = "Richter ölçeği (ML): Deprem büyüklüğünün logaritmik ölçeğidir. Her 1.0 değerindeki artış, yaklaşık 10 kat daha fazla sarsıntı genliği ve 32 kat daha fazla enerji anlamına gelir.\n\n3.0 altı: Genellikle hissedilmez\n3.0-3.9: Hafif hissedilir\n4.0-4.9: Orta şiddette, eşyalar sallanabilir\n5.0-5.9: Hasar verebilir\n6.0+: Önemli hasar potansiyeli"
@@ -636,12 +595,10 @@ class EarthquakeDetailsViewController: UIViewController {
         infoContent.textColor = AppTheme.bodyTextColor
         infoContent.numberOfLines = 0
         
-        // Add views to info container
         infoView.addSubview(infoIcon)
         infoView.addSubview(infoTitle)
         infoView.addSubview(infoContent)
         
-        // Set constraints
         NSLayoutConstraint.activate([
             infoIcon.topAnchor.constraint(equalTo: infoView.topAnchor, constant: 16),
             infoIcon.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
@@ -658,7 +615,6 @@ class EarthquakeDetailsViewController: UIViewController {
             infoContent.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -16)
         ])
         
-        // Add to stack view with some spacing
         let spacer = UIView()
         spacer.translatesAutoresizingMaskIntoConstraints = false
         spacer.heightAnchor.constraint(equalToConstant: 16).isActive = true
@@ -697,25 +653,22 @@ class EmptyStateView: UIView {
     }
     
     private func setupView(image: UIImage, title: String, message: String) {
-        // Container view
+
         containerView.translatesAutoresizingMaskIntoConstraints = false
         containerView.backgroundColor = AppTheme.secondaryBackgroundColor
         containerView.layer.cornerRadius = 16
         
-        // Image view
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFit
         imageView.image = image
         imageView.tintColor = AppTheme.primaryColor
         
-        // Title label
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
         titleLabel.textColor = AppTheme.titleTextColor
         titleLabel.textAlignment = .center
         
-        // Message label
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.text = message
         messageLabel.font = UIFont.systemFont(ofSize: 14)
@@ -723,13 +676,11 @@ class EmptyStateView: UIView {
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
         
-        // Add subviews
         containerView.addSubview(imageView)
         containerView.addSubview(titleLabel)
         containerView.addSubview(messageLabel)
         addSubview(containerView)
         
-        // Setup constraints
         NSLayoutConstraint.activate([
             containerView.centerXAnchor.constraint(equalTo: centerXAnchor),
             containerView.centerYAnchor.constraint(equalTo: centerYAnchor),

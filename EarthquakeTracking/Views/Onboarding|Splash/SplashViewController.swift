@@ -24,14 +24,12 @@ class SplashViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = AppTheme.backgroundColor
         
-        // Setup wave animation
         waveView.translatesAutoresizingMaskIntoConstraints = false
         waveView.backgroundColor = .clear
         waveView.waveColor = AppTheme.primaryColor.withAlphaComponent(0.6)
         waveView.secondaryWaveColor = AppTheme.primaryLightColor.withAlphaComponent(0.4)
         view.addSubview(waveView)
         
-        // Logo container setup
         logoContainerView.translatesAutoresizingMaskIntoConstraints = false
         logoContainerView.backgroundColor = AppTheme.primaryColor
         logoContainerView.layer.cornerRadius = 50
@@ -39,14 +37,12 @@ class SplashViewController: UIViewController {
         logoContainerView.alpha = 0
         view.addSubview(logoContainerView)
         
-        // Logo setup
         logoImageView.translatesAutoresizingMaskIntoConstraints = false
         logoImageView.contentMode = .scaleAspectFit
         logoImageView.image = UIImage(systemName: "waveform.path.ecg")
         logoImageView.tintColor = .white
         logoContainerView.addSubview(logoImageView)
         
-        // Title setup
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "DEPREM"
         titleLabel.font = UIFont.systemFont(ofSize: 42, weight: .heavy)
@@ -55,7 +51,6 @@ class SplashViewController: UIViewController {
         titleLabel.alpha = 0
         view.addSubview(titleLabel)
         
-        // Subtitle setup
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         subtitleLabel.text = "Deprem Bilgileri ve Kişisel Güvenlik Asistanınız"
         subtitleLabel.numberOfLines = 2
@@ -65,33 +60,28 @@ class SplashViewController: UIViewController {
         subtitleLabel.alpha = 0
         view.addSubview(subtitleLabel)
         
-        // Layout constraints
         NSLayoutConstraint.activate([
-            // Wave view (takes bottom half of screen)
+
             waveView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             waveView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             waveView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             waveView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5),
             
-            // Logo container
             logoContainerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             logoContainerView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
             logoContainerView.widthAnchor.constraint(equalToConstant: 100),
             logoContainerView.heightAnchor.constraint(equalToConstant: 100),
             
-            // Logo image
             logoImageView.centerXAnchor.constraint(equalTo: logoContainerView.centerXAnchor),
             logoImageView.centerYAnchor.constraint(equalTo: logoContainerView.centerYAnchor),
             logoImageView.widthAnchor.constraint(equalToConstant: 60),
             logoImageView.heightAnchor.constraint(equalToConstant: 60),
             
-            // Title
             titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             titleLabel.topAnchor.constraint(equalTo: logoContainerView.bottomAnchor, constant: 40),
             titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
-            // Subtitle
             subtitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
             subtitleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
@@ -101,10 +91,9 @@ class SplashViewController: UIViewController {
     
     // MARK: - Animations
     private func startAnimations() {
-        // Start wave animation
+
         waveView.startAnimation()
         
-        // Animate logo container
         UIView.animate(withDuration: 0.8, delay: 0.3, options: [.curveEaseOut]) {
             self.logoContainerView.alpha = 1.0
             self.logoContainerView.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
@@ -114,22 +103,19 @@ class SplashViewController: UIViewController {
             }
         }
         
-        // Animate logo with pulse effect
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             self.addPulseEffect(to: self.logoContainerView)
         }
         
-        // Animate title
         UIView.animate(withDuration: 0.8, delay: 0.8, options: [.curveEaseOut]) {
             self.titleLabel.alpha = 1.0
             self.titleLabel.transform = CGAffineTransform(translationX: 0, y: -10)
         }
         
-        // Animate subtitle
         UIView.animate(withDuration: 0.8, delay: 1.0, options: [.curveEaseOut]) {
             self.subtitleLabel.alpha = 1.0
         } completion: { _ in
-            // After all animations complete, delay and then check if we need to show onboarding
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 self.navigateToNextScreen()
             }
@@ -151,24 +137,24 @@ class SplashViewController: UIViewController {
     
     // MARK: - Navigation
     private func navigateToNextScreen() {
-        // Check if this is the first launch
+
         let defaults = UserDefaults.standard
         let hasSeenOnboarding = defaults.bool(forKey: "hasSeenOnboarding")
         
         if !hasSeenOnboarding {
-            // First time launching the app - show onboarding
+
             let onboardingVC = OnboardingViewController()
             onboardingVC.modalPresentationStyle = .fullScreen
             onboardingVC.modalTransitionStyle = .crossDissolve
             present(onboardingVC, animated: true)
         } else {
-            // Not the first time - go directly to main interface
+
             transitionToMainInterface()
         }
     }
     
     private func transitionToMainInterface() {
-        // Get scene delegate to setup main interface
+
         let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
         let sceneDelegate = windowScene?.delegate as? SceneDelegate
         sceneDelegate?.setupMainInterface(in: windowScene!)
@@ -217,7 +203,6 @@ class WaveAnimationView: UIView {
         let width = bounds.width
         let height = bounds.height
         
-        // Create paths for both waves
         let firstWavePath = createWavePath(
             width: width,
             height: height,
@@ -246,7 +231,6 @@ class WaveAnimationView: UIView {
         path.move(to: CGPoint(x: 0, y: height))
         path.addLine(to: CGPoint(x: 0, y: midHeight))
         
-        // Create wave
         var x: CGFloat = 0
         while x <= width {
             let y = midHeight + amplitude * sin((2 * .pi * x / wavelength) + phase)
@@ -254,7 +238,6 @@ class WaveAnimationView: UIView {
             x += 1
         }
         
-        // Complete the path
         path.addLine(to: CGPoint(x: width, y: height))
         path.close()
         

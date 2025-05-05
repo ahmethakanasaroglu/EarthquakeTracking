@@ -30,14 +30,13 @@ class EarthquakeListViewModel: ObservableObject {
     }
     
     func sortByDate() {
-        // En son tarihli depremler üstte olacak şekilde sırala (varsayılan sıralama)
+
         earthquakes.sort {
             guard let date1 = dateFormatter.date(from: $0.date),
                   let date2 = dateFormatter.date(from: $1.date) else {
                 return false
             }
             
-            // Aynı gün ise saate göre karşılaştır
             if Calendar.current.isDate(date1, inSameDayAs: date2) {
                 return $0.time > $1.time
             }
@@ -62,7 +61,6 @@ class EarthquakeListViewModel: ObservableObject {
         return formatter
     }
     
-    // İlk yükleme için varsayılan sıralama (en son depremler üstte)
     func applySortOnLoad() {
         sortByDate()
     }

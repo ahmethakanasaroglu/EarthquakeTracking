@@ -436,13 +436,10 @@ class RiskModelViewController: UIViewController {
         let centerLat = userLocation.latitude
         let centerLon = userLocation.longitude
         
-        // Harita için bölgelere ayır
-        // Hedef: 25-30 adet risk bölgesi oluştur
         let targetRegionCount = 25
-        let attempts = 100 // Yeterli sayıda bölge oluşturmak için maksimum deneme sayısı
+        let attempts = 100
         
         for _ in 0..<attempts {
-            // Rastgele bir konum oluştur
             let latOffset = Double.random(in: -0.05...0.05)
             let lonOffset = Double.random(in: -0.05...0.05)
             
@@ -450,17 +447,14 @@ class RiskModelViewController: UIViewController {
             let lon = centerLon + lonOffset
             let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
             
-            // Bu konumun mevcut bölgelerle çakışıp çakışmadığını kontrol et
             if isCoordinateTooCloseToExistingRegions(coordinate) {
-                continue // Çakışıyorsa bu konumu atla
+                continue
             }
             
-            // Risk seviyesi seç - bölgeye göre değil tamamen rastgele
             let riskValue = Double.random(in: 0.1...1.0)
             let riskLevel: RiskLevel
             let radius: CLLocationDistance
             
-            // Risk seviyesini belirle
             if riskValue > 0.7 {
                 riskLevel = .high
                 radius = Double.random(in: 500...600)
@@ -472,7 +466,6 @@ class RiskModelViewController: UIViewController {
                 radius = Double.random(in: 350...500)
             }
             
-            // Yeni risk bölgesi oluştur
             let region = RiskRegion(
                 coordinate: coordinate,
                 radius: radius,
@@ -480,22 +473,18 @@ class RiskModelViewController: UIViewController {
                 riskLevel: riskLevel
             )
             
-            // Listeye ekle
             riskRegions.append(region)
             
-            // Hedef sayıya ulaştıysak döngüden çık
             if riskRegions.count >= targetRegionCount {
                 break
             }
         }
     }
     
-    // Yeni bir koordinatın mevcut bölgelerle çakışıp çakışmadığını kontrol et
     private func isCoordinateTooCloseToExistingRegions(_ coordinate: CLLocationCoordinate2D) -> Bool {
         for region in riskRegions {
             let existingLocation = region.coordinate
             
-            // İki koordinat arasındaki mesafeyi hesapla
             let distance = calculateDistance(
                 lat1: coordinate.latitude,
                 lon1: coordinate.longitude,
@@ -503,20 +492,18 @@ class RiskModelViewController: UIViewController {
                 lon2: existingLocation.longitude
             )
             
-            // Minimum güvenli mesafe (çakışmayı önlemek için iki bölgenin yarıçaplarının toplamı + ek mesafe)
-            let minSafeDistance = region.radius + 600 // Ortalama bölge yarıçapı + ek mesafe (metre cinsinden)
+            let minSafeDistance = region.radius + 600
             
             if distance < minSafeDistance {
-                return true // Çok yakın, çakışma riski var
+                return true
             }
         }
         
-        return false // Güvenli mesafede
+        return false
     }
     
-    // İki koordinat arasındaki mesafeyi hesapla (metre cinsinden)
     private func calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
-        let earthRadius = 6371000.0 // Dünya yarıçapı (metre cinsinden)
+        let earthRadius = 6371000.0
         
         let dLat = (lat2 - lat1) * .pi / 180.0
         let dLon = (lon2 - lon1) * .pi / 180.0
@@ -536,26 +523,21 @@ extension RiskModelViewController: MKMapViewDelegate {
         if let circle = overlay as? MKCircle {
             let renderer = MKCircleRenderer(circle: circle)
             
-            // Risk değerine göre renk ayarla
             if let riskString = circle.title, let riskValue = Double(riskString) {
                 if riskValue > 0.7 {
-                    // Yüksek risk - kırmızı
                     renderer.fillColor = UIColor.systemRed.withAlphaComponent(0.3)
                     renderer.strokeColor = UIColor.systemRed
                     renderer.lineWidth = 1.5
                 } else if riskValue > 0.4 {
-                    // Orta risk - turuncu/sarı
                     renderer.fillColor = UIColor.systemOrange.withAlphaComponent(0.3)
                     renderer.strokeColor = UIColor.systemOrange
                     renderer.lineWidth = 1.0
                 } else {
-                    // Düşük risk - yeşil
                     renderer.fillColor = UIColor.systemGreen.withAlphaComponent(0.3)
                     renderer.strokeColor = UIColor.systemGreen
                     renderer.lineWidth = 0.5
                 }
             } else {
-                // Varsayılan stil
                 renderer.fillColor = UIColor.systemBlue.withAlphaComponent(0.3)
                 renderer.strokeColor = UIColor.systemBlue
                 renderer.lineWidth = 1.0

@@ -43,7 +43,6 @@ class MistralChatViewController: UIViewController {
         title = "Deprem Chatbot"
         view.backgroundColor = .systemBackground
         
-        // UI Bileşenlerini Oluştur
         setupTableView()
         setupInfoView()
         setupMessageBar()
@@ -53,10 +52,8 @@ class MistralChatViewController: UIViewController {
         view.addSubview(infoView)
         view.addSubview(messageInputBar)
         
-        // Constraint'leri Kur - Burada infoView ve tableView ayrı ayrı view'a bağlı
         setupConstraints()
         
-        // Temizle butonunu ekle
         let clearButton = UIBarButtonItem(
             image: UIImage(systemName: "trash"),
             style: .plain,
@@ -173,7 +170,7 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupConstraints() {
-        // Önce infoView constraint'leri
+
         let infoViewConstraints: [NSLayoutConstraint] = [
             infoView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             infoView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -182,20 +179,18 @@ class MistralChatViewController: UIViewController {
         ]
         NSLayoutConstraint.activate(infoViewConstraints)
         
-        // MessageInputBar constraint'leri
         bottomConstraint = messageInputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         let messageBarConstraints: [NSLayoutConstraint] = [
             messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             messageInputBar.heightAnchor.constraint(equalToConstant: 70),
-            bottomConstraint // burada nil olmadığından emin olmak gerekiyor
+            bottomConstraint
         ]
         
-        // nil kontrolü yapalım
         if bottomConstraint != nil {
             NSLayoutConstraint.activate(messageBarConstraints)
         } else {
-            // bottomConstraint nil ise, onu hariç tutarak aktifleştirelim
+
             NSLayoutConstraint.activate([
                 messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -204,12 +199,11 @@ class MistralChatViewController: UIViewController {
             ])
         }
         
-        // TableView constraint'leri - infoView görünür olduğunda ve olmadığında
         updateTableViewConstraints()
     }
     
     private func updateTableViewConstraints(infoViewVisible: Bool = true) {
-        // Tüm eski tableView constraint'lerini kaldır
+
         for constraint in view.constraints {
             if (constraint.firstItem === tableView && constraint.firstAttribute == .top) ||
                (constraint.secondItem === tableView && constraint.secondAttribute == .top) {
@@ -217,14 +211,12 @@ class MistralChatViewController: UIViewController {
             }
         }
         
-        // Yeni constraint'i ekle
         if infoViewVisible {
             tableView.topAnchor.constraint(equalTo: infoView.bottomAnchor, constant: 8).isActive = true
         } else {
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
         }
         
-        // Sabit olan diğer constraint'leri ekle
         NSLayoutConstraint.activate([
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -383,7 +375,7 @@ class MistralChatViewController: UIViewController {
 // MARK: - UITableViewDelegate, UITableViewDataSource
 extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // Sistem mesajlarını gösterme (bunlar arka planda çalışır)
+
         return mistralManager.messages.filter { $0.role != .system }.count
     }
     
@@ -392,7 +384,6 @@ extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource 
             return UITableViewCell()
         }
         
-        // Sistem mesajlarını filtreleyerek al
         let visibleMessages = mistralManager.messages.filter { $0.role != .system }
         
         if indexPath.row < visibleMessages.count {
@@ -458,31 +449,26 @@ class MessageCell: UITableViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        // Tüm eski constraint'leri kaldır
+
         for view in [bubbleView, messageLabel, timeLabel] {
             view.removeFromSuperview()
         }
         
-        // UI'ı yeniden oluştur
         setupUI()
     }
     
     func configure(with message: MistralMessage) {
         let isUser = message.role == .user
         
-        // Bubble styling
         bubbleView.backgroundColor = isUser ? .systemIndigo : .secondarySystemBackground
         messageLabel.textColor = isUser ? .white : .label
         
-        // Content
         messageLabel.text = message.content
         
-        // Tarih formatı
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
         timeLabel.text = dateFormatter.string(from: message.timestamp)
         
-        // Position constraints
         if isUser {
             NSLayoutConstraint.activate([
                 messageLabel.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 12),
@@ -499,7 +485,6 @@ class MessageCell: UITableViewCell {
                 timeLabel.trailingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: -8)
             ])
             
-            // Baloncuk şeklini ayarla
             bubbleView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMinYCorner]
         } else {
             NSLayoutConstraint.activate([
@@ -517,7 +502,6 @@ class MessageCell: UITableViewCell {
                 timeLabel.leadingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: 8)
             ])
             
-            // Baloncuk şeklini ayarla
             bubbleView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner]
         }
     }

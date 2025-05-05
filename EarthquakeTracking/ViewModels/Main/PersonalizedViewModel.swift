@@ -27,7 +27,6 @@ class PersonalizedViewModel: ObservableObject {
     @Published var isLoadingRiskData = false
     @Published var riskAreaCoordinates: [CLLocationCoordinate2D] = []
     
-    // Önbellek için yeni özellikler
     private var cachedRiskLevels: [String: RiskLevel] = [:]
     private var hasLoadedRiskData = false
     
@@ -39,7 +38,6 @@ class PersonalizedViewModel: ObservableObject {
         loadUserPreferences()
         requestNotificationAuthorization()
         
-        // Uygulama ilk açıldığında önbelleği temizle
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(clearCachedData),
@@ -53,7 +51,7 @@ class PersonalizedViewModel: ObservableObject {
     }
     
     @objc private func clearCachedData() {
-        // Uygulama her başlatıldığında önbelleği temizle
+
         cachedRiskLevels.removeAll()
         hasLoadedRiskData = false
     }
@@ -62,8 +60,8 @@ class PersonalizedViewModel: ObservableObject {
     
     private func setupLocationManager() {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 100 // 100 metrede bir konum güncellemesi al
-        locationManager.delegate = nil // Delegate ViewModel içinde değil UIKit tarafında ayarlanacak
+        locationManager.distanceFilter = 100
+        locationManager.delegate = nil
         
         userLocation = CLLocationCoordinate2D(latitude: 39.9334, longitude: 32.8597)
     }
@@ -156,7 +154,7 @@ class PersonalizedViewModel: ObservableObject {
     
     private func simulateEarthquake() {
         
-        let simulationDuration = 15.0 // 15 saniye süren bir simülasyon
+        let simulationDuration = 15.0
         let startTime = Date()
         
         let maxIntensity = selectedSimulationMagnitude / 10.0 * 2.0
@@ -182,7 +180,7 @@ class PersonalizedViewModel: ObservableObject {
                     return
                 }
                 
-                let baseFrequency = 0.5 + (self.selectedSimulationMagnitude - 3.0) * 0.3 // Büyüklük arttıkça frekans artar
+                let baseFrequency = 0.5 + (self.selectedSimulationMagnitude - 3.0) * 0.3
                 let progress = elapsedTime / simulationDuration
                 
                 let sinValue = sin(elapsedTime * baseFrequency * 2 * .pi)
@@ -237,12 +235,10 @@ class PersonalizedViewModel: ObservableObject {
     func loadRiskDataForCurrentLocation() {
         guard let location = userLocation else { return }
         
-        // Eğer veri zaten yüklendiyse, tekrar yükleme
         if hasLoadedRiskData {
             return
         }
         
-        // Konum için önbellekte veri var mı kontrol et
         let locationKey = "\(location.latitude),\(location.longitude)"
         if let cachedRisk = cachedRiskLevels[locationKey] {
             self.riskLevelForCurrentLocation = cachedRisk
@@ -250,15 +246,11 @@ class PersonalizedViewModel: ObservableObject {
             return
         }
         
-        // Yoksa yeni veri yükle
         isLoadingRiskData = true
         
-        // Simüle edilmiş veri yükleme gecikmesi (gerçek bir API çağrısını simüle etmek için)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             guard let self = self else { return }
             
-            // Tutarlı bir risk seviyesi için konumun enlem değerini kullan
-            // Bu, aynı konum için her zaman aynı risk değerini üretecektir
             let locationSeed = abs(location.latitude * 1000).truncatingRemainder(dividingBy: 3)
             let riskLevel: RiskLevel
             
@@ -272,11 +264,9 @@ class PersonalizedViewModel: ObservableObject {
             
             self.riskLevelForCurrentLocation = riskLevel
             
-            // Önbelleğe ekle
             self.cachedRiskLevels[locationKey] = riskLevel
             self.hasLoadedRiskData = true
             
-            // Risk bölgesi koordinatlarını oluştur
             self.generateRiskAreaCoordinates(aroundLocation: location)
             
             self.isLoadingRiskData = false
@@ -286,10 +276,8 @@ class PersonalizedViewModel: ObservableObject {
     private func generateRiskAreaCoordinates(aroundLocation location: CLLocationCoordinate2D) {
         riskAreaCoordinates = []
         
-        // Rastgele noktalar için kullanılacak yarıçap (derece olarak)
-        let radiusInDegrees = 0.05 // Yaklaşık 5 km
+        let radiusInDegrees = 0.05
         
-        // Risk seviyesine bağlı olarak nokta yoğunluğunu ayarla
         var pointCount: Int
         
         switch riskLevelForCurrentLocation {
@@ -303,12 +291,11 @@ class PersonalizedViewModel: ObservableObject {
             pointCount = 10
         }
         
-        // Risk seviyesine göre rastgele noktalar oluştur
         let seed = Int(location.latitude * 1000) + Int(location.longitude * 1000)
         var randomGenerator = SeededRandomGenerator(seed: seed)
         
         for _ in 0..<pointCount {
-            // -1 ile 1 arasında rastgele değerler
+
             let randomLat = randomGenerator.nextDouble() * radiusInDegrees * 2 - radiusInDegrees
             let randomLon = randomGenerator.nextDouble() * radiusInDegrees * 2 - radiusInDegrees
             
