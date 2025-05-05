@@ -346,8 +346,8 @@ class PersonalizedViewController: UIViewController {
     }
     
     @objc private func openARScan() {
-        let arScanVC = ARScanViewController(viewModel: viewModel)
-        navigationController?.pushViewController(arScanVC, animated: true)
+        let arSimulationVC = ARRealObjectSimulationViewController(viewModel: viewModel)
+        navigationController?.pushViewController(arSimulationVC, animated: true)
     }
     
     @objc private func openRiskModel() {
