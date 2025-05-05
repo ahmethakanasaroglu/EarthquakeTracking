@@ -4,6 +4,7 @@ class OnboardingViewController: UIViewController {
     
     // MARK: - Properties
     private let scrollView = UIScrollView()
+    private let contentView = UIView()
     private let pageControl = UIPageControl()
     private let continueButton = UIButton(type: .system)
     private let skipButton = UIButton(type: .system)
@@ -61,7 +62,7 @@ class OnboardingViewController: UIViewController {
         skipButton.addTarget(self, action: #selector(skipButtonTapped), for: .touchUpInside)
         view.addSubview(skipButton)
         
-        // Layout
+        // Layout - Use safe area and make sure spacing is consistent
         NSLayoutConstraint.activate([
             skipButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             skipButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
@@ -73,6 +74,7 @@ class OnboardingViewController: UIViewController {
             
             pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             pageControl.bottomAnchor.constraint(equalTo: continueButton.topAnchor, constant: -30),
+            pageControl.heightAnchor.constraint(equalToConstant: 20), // Fixed height for page control
             
             continueButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             continueButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -30),
@@ -112,35 +114,39 @@ class OnboardingViewController: UIViewController {
         )
         
         pages = [page1, page2, page3, page4]
-        
-        // Create all page views at once
-        for page in pages {
-            let pageView = createPageView(page: page)
-            scrollView.addSubview(pageView)
-            pageViews.append(pageView)
-        }
     }
     
     private func updateScrollViewContentSize() {
-        // Update page views layout
-        for (index, pageView) in pageViews.enumerated() {
+        // Clear any existing page views
+        scrollView.subviews.forEach { $0.removeFromSuperview() }
+        pageViews.removeAll()
+        
+        // Get available width and height
+        let pageWidth = view.frame.width
+        let pageHeight = scrollView.frame.height
+        
+        // Create and add page views with correct frames
+        for (index, page) in pages.enumerated() {
+            let pageView = createPageView(page: page, width: pageWidth, height: pageHeight)
             pageView.frame = CGRect(
-                x: view.frame.width * CGFloat(index),
+                x: pageWidth * CGFloat(index),
                 y: 0,
-                width: view.frame.width,
-                height: scrollView.frame.height
+                width: pageWidth,
+                height: pageHeight
             )
+            scrollView.addSubview(pageView)
+            pageViews.append(pageView)
         }
         
+        // Update scroll view content size
         scrollView.contentSize = CGSize(
-            width: view.frame.width * CGFloat(pages.count),
-            height: scrollView.frame.height
+            width: pageWidth * CGFloat(pages.count),
+            height: pageHeight
         )
     }
     
-    private func createPageView(page: OnboardingPage) -> UIView {
-        let pageView = UIView()
-        pageView.translatesAutoresizingMaskIntoConstraints = false
+    private func createPageView(page: OnboardingPage, width: CGFloat, height: CGFloat) -> UIView {
+        let pageView = UIView(frame: CGRect(x: 0, y: 0, width: width, height: height))
         
         // Create image view
         let imageView = UIImageView()
@@ -190,27 +196,35 @@ class OnboardingViewController: UIViewController {
         pageView.addSubview(underlineView)
         pageView.addSubview(descriptionLabel)
         
-        // Set constraints
+        // Set constraints - Use proportional positioning to handle different screen sizes
+        let screenHeight = UIScreen.main.bounds.height
+        let circleOffsetY = screenHeight < 700 ? -40 : -80 // Adjust for smaller screens
+        
         NSLayoutConstraint.activate([
+            // Circle view constraints
             circleView.centerXAnchor.constraint(equalTo: pageView.centerXAnchor),
-            circleView.centerYAnchor.constraint(equalTo: pageView.centerYAnchor, constant: -80),
+            circleView.centerYAnchor.constraint(equalTo: pageView.centerYAnchor, constant: CGFloat(circleOffsetY)),
             circleView.widthAnchor.constraint(equalToConstant: 150),
             circleView.heightAnchor.constraint(equalToConstant: 150),
             
+            // Image view constraints
             imageView.centerXAnchor.constraint(equalTo: circleView.centerXAnchor),
             imageView.centerYAnchor.constraint(equalTo: circleView.centerYAnchor),
             imageView.widthAnchor.constraint(equalToConstant: 70),
             imageView.heightAnchor.constraint(equalToConstant: 70),
             
+            // Title label constraints
             titleLabel.topAnchor.constraint(equalTo: circleView.bottomAnchor, constant: 40),
             titleLabel.leadingAnchor.constraint(equalTo: pageView.leadingAnchor, constant: 40),
             titleLabel.trailingAnchor.constraint(equalTo: pageView.trailingAnchor, constant: -40),
             
+            // Underline view constraints
             underlineView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             underlineView.centerXAnchor.constraint(equalTo: titleLabel.centerXAnchor),
             underlineView.widthAnchor.constraint(equalToConstant: 80),
             underlineView.heightAnchor.constraint(equalToConstant: 3),
             
+            // Description label constraints
             descriptionLabel.topAnchor.constraint(equalTo: underlineView.bottomAnchor, constant: 20),
             descriptionLabel.leadingAnchor.constraint(equalTo: pageView.leadingAnchor, constant: 40),
             descriptionLabel.trailingAnchor.constraint(equalTo: pageView.trailingAnchor, constant: -40)
@@ -271,9 +285,10 @@ class OnboardingViewController: UIViewController {
         UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
         
         // Transition to main interface
-        let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-        let sceneDelegate = windowScene?.delegate as? SceneDelegate
-        sceneDelegate?.setupMainInterface(in: windowScene!)
+        if let windowScene = view.window?.windowScene {
+            let sceneDelegate = windowScene.delegate as? SceneDelegate
+            sceneDelegate?.setupMainInterface(in: windowScene)
+        }
         
         dismiss(animated: true)
     }
@@ -282,29 +297,40 @@ class OnboardingViewController: UIViewController {
 // MARK: - UIScrollViewDelegate
 extension OnboardingViewController: UIScrollViewDelegate {
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let pageIndex = Int(scrollView.contentOffset.x / scrollView.frame.width)
+        let pageIndex = Int(round(scrollView.contentOffset.x / scrollView.frame.width))
         currentPage = pageIndex
         updateUI()
     }
     
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        // Add parallax effect to the page elements
+        // Use a more subtle parallax effect that won't cause misalignment
         let pageWidth = scrollView.frame.width
         let currentOffset = scrollView.contentOffset.x
         
+        // Calculate page index and offset percentage for smoother animations
+        let currentPageIndex = Int(floor(currentOffset / pageWidth))
+        let nextPageIndex = currentPageIndex + 1
+        let percentComplete = (currentOffset - (CGFloat(currentPageIndex) * pageWidth)) / pageWidth
+        
+        // Calculate page control current page with decimals for smooth transitions
+        pageControl.currentPage = currentPageIndex
+        
+        // Apply very subtle parallax effect
         for (index, pageView) in pageViews.enumerated() {
-            let pageOffset = CGFloat(index) * pageWidth
-            let relativeOffset = currentOffset - pageOffset
-            
-            // Move the circle view at a different rate for parallax effect
-            if let circleView = pageView.subviews.first(where: { $0.layer.cornerRadius == 75 }) {
-                let parallaxOffset = relativeOffset * 0.3 // 30% of the scroll movement
-                circleView.transform = CGAffineTransform(translationX: -parallaxOffset, y: 0)
+            if index >= currentPageIndex - 1 && index <= nextPageIndex + 1 {
+                let pageOffset = CGFloat(index) * pageWidth
+                let relativeOffset = currentOffset - pageOffset
+                
+                // Apply a very small parallax effect (10% instead of 30%)
+                if let circleView = pageView.subviews.first(where: { $0.layer.cornerRadius == 75 }) {
+                    let parallaxOffset = relativeOffset * 0.1
+                    circleView.transform = CGAffineTransform(translationX: -parallaxOffset, y: 0)
+                }
+                
+                // Adjust opacity more subtly
+                let normalizedOffset = abs(relativeOffset / pageWidth)
+                pageView.alpha = 1.0 - normalizedOffset * 0.3
             }
-            
-            // Adjust opacity based on position
-            let normalizedOffset = abs(relativeOffset / pageWidth)
-            pageView.alpha = 1.0 - normalizedOffset * 0.5 // Dim slightly when not centered
         }
     }
 }

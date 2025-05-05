@@ -14,9 +14,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Create window with the correct windowScene
         window = UIWindow(windowScene: windowScene)
         
-        // Set the splash screen as the initial screen
-        let splashViewController = SplashViewController()
-        window?.rootViewController = splashViewController
+        // Check if user has seen onboarding
+        if UserDefaults.standard.bool(forKey: "hasSeenOnboarding") {
+            // User has seen onboarding, so go directly to main interface
+            setupMainInterface(in: windowScene)
+        } else {
+            // User hasn't seen onboarding, show splash screen first
+            let splashViewController = SplashViewController()
+            window?.rootViewController = splashViewController
+        }
         
         // Make the window visible
         window?.makeKeyAndVisible()
@@ -61,7 +67,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let personalizedNavigationController = UINavigationController(rootViewController: personalizedViewController)
         personalizedNavigationController.tabBarItem = UITabBarItem(title: "Kişiselleştirilmiş", image: UIImage(systemName: "person.fill.viewfinder"), tag: 1)
         
-        // Mevcut tab bar'a yeni bir sekme eklemek
+        // Create AI extensions view controller
         let aiExtensionsViewController = AIExtensionsViewController()
         let aiNavigationController = UINavigationController(rootViewController: aiExtensionsViewController)
         aiNavigationController.tabBarItem = UITabBarItem(title: "AI Eklentileri", image: UIImage(systemName: "brain"), tag: 2)
@@ -74,8 +80,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         configureNavigationBarAppearance(for: personalizedNavigationController)
         configureNavigationBarAppearance(for: aiNavigationController)
         
-        // Set the tab bar controller as the root view controller
-        window?.rootViewController = tabBarController
+        // Set the tab bar controller as the root view controller using main thread
+        DispatchQueue.main.async {
+            self.window?.rootViewController = tabBarController
+            // Add transition animation
+            let transition = CATransition()
+            transition.type = .fade
+            transition.duration = 0.3
+            self.window?.layer.add(transition, forKey: nil)
+        }
     }
     
     private func configureNavigationBarAppearance(for navigationController: UINavigationController) {
@@ -87,32 +100,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         // Make navigation bar use large titles
         navigationController.navigationBar.prefersLargeTitles = true
-    }
-
-    func sceneDidDisconnect(_ scene: UIScene) {
-        // Called as the scene is being released by the system.
-        // This occurs shortly after the scene enters the background, or when its session is discarded.
-        // Release any resources associated with this scene that can be re-created the next time the scene connects.
-    }
-
-    func sceneDidBecomeActive(_ scene: UIScene) {
-        // Called when the scene has moved from an inactive state to an active state.
-        // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
-    }
-
-    func sceneWillResignActive(_ scene: UIScene) {
-        // Called when the scene will move from an active state to an inactive state.
-        // This may occur due to temporary interruptions (ex. an incoming phone call).
-    }
-
-    func sceneWillEnterForeground(_ scene: UIScene) {
-        // Called as the scene transitions from the background to the foreground.
-        // Use this method to undo the changes made on entering the background.
-    }
-
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        // Called as the scene transitions from the foreground to the background.
-        // Use this method to save data, release shared resources, and store enough scene-specific state information
-        // to restore the scene back to its current state.
     }
 }
