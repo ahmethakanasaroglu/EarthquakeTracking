@@ -57,7 +57,8 @@ class SplashViewController: UIViewController {
         
         // Subtitle setup
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Deprem bilgileri ve kişisel güvenlik asistanınız"
+        subtitleLabel.text = "Deprem Bilgileri ve Kişisel Güvenlik Asistanınız"
+        subtitleLabel.numberOfLines = 2
         subtitleLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         subtitleLabel.textColor = AppTheme.bodyTextColor
         subtitleLabel.textAlignment = .center
