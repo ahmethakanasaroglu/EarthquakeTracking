@@ -10,14 +10,18 @@ struct AppTheme {
     static let accentColor = UIColor(red: 241/255, green: 196/255, blue: 15/255, alpha: 1) // Alert Yellow
     
     // MARK: - Background Colors
-    static let backgroundColor = UIColor.systemBackground
-    static let secondaryBackgroundColor = UIColor.secondarySystemBackground
+    static let backgroundColor = UIColor(red: 247/255, green: 250/255, blue: 252/255, alpha: 1) // Light Blue-Gray Background
+    static let secondaryBackgroundColor = UIColor(red: 241/255, green: 245/255, blue: 249/255, alpha: 1) // Lighter Gray-Blue
     static let tertiaryBackgroundColor = UIColor(red: 235/255, green: 243/255, blue: 250/255, alpha: 1) // Light Blue Background
     
+    // MARK: - Gradient Colors
+    static let gradientStartColor = UIColor(red: 229/255, green: 239/255, blue: 245/255, alpha: 1)
+    static let gradientEndColor = UIColor(red: 242/255, green: 249/255, blue: 251/255, alpha: 1)
+    
     // MARK: - Text Colors
-    static let titleTextColor = UIColor.label
-    static let bodyTextColor = UIColor.secondaryLabel
-    static let lightTextColor = UIColor.tertiaryLabel
+    static let titleTextColor = UIColor(red: 10/255, green: 24/255, blue: 50/255, alpha: 1) // Dark Blue-Gray
+    static let bodyTextColor = UIColor(red: 71/255, green: 85/255, blue: 105/255, alpha: 1) // Medium Gray-Blue
+    static let lightTextColor = UIColor(red: 148/255, green: 163/255, blue: 184/255, alpha: 1) // Light Gray-Blue
     
     // MARK: - Status Colors
     static let successColor = UIColor(red: 46/255, green: 204/255, blue: 113/255, alpha: 1) // Green
@@ -49,6 +53,13 @@ struct AppTheme {
         case .primary:
             button.backgroundColor = primaryColor
             button.setTitleColor(.white, for: .normal)
+            
+            // Add subtle inner shadow for depth
+            button.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
+            button.layer.shadowOffset = CGSize(width: 0, height: 1)
+            button.layer.shadowRadius = 2
+            button.layer.shadowOpacity = 1
+            button.layer.masksToBounds = false
         case .secondary:
             button.backgroundColor = .clear
             button.setTitleColor(primaryColor, for: .normal)
@@ -66,12 +77,34 @@ struct AppTheme {
     }
     
     static func applyCardStyle(to view: UIView) {
-        view.backgroundColor = backgroundColor
+        view.backgroundColor = .white
         view.layer.cornerRadius = 16
-        view.layer.shadowColor = UIColor.black.cgColor
-        view.layer.shadowOffset = CGSize(width: 0, height: 2)
-        view.layer.shadowRadius = 6
-        view.layer.shadowOpacity = 0.1
+        view.layer.shadowColor = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 0.05).cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 4)
+        view.layer.shadowRadius = 8
+        view.layer.shadowOpacity = 1
+        
+        // Add subtle border for better definition
+        view.layer.borderWidth = 1
+        view.layer.borderColor = UIColor(red: 226/255, green: 232/255, blue: 240/255, alpha: 0.6).cgColor
+    }
+    
+    // MARK: - Background Gradient
+    static func applyBackgroundGradient(to view: UIView) {
+        // Remove existing gradient layers
+        view.layer.sublayers?.removeAll(where: { $0 is CAGradientLayer })
+        
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            gradientStartColor.cgColor,
+            gradientEndColor.cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+        gradientLayer.frame = view.bounds
+        
+        view.layer.insertSublayer(gradientLayer, at: 0)
     }
     
     // MARK: - Nav Bar and Tab Bar Styling
@@ -82,22 +115,60 @@ struct AppTheme {
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
         
+        // Add subtle shadow
+        appearance.shadowColor = UIColor.black.withAlphaComponent(0.1)
+        
         return appearance
     }
     
     static func configureTabBarAppearance() -> UITabBarAppearance {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = backgroundColor
+        appearance.backgroundColor = .white
+        
+        // Add subtle shadow to top
+        appearance.shadowColor = UIColor.black.withAlphaComponent(0.03)
+        appearance.shadowImage = createShadowImage()
         
         // Configure selected icon and title colors
         let selected = UITabBarItemAppearance()
         selected.normal.iconColor = primaryColor
         selected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: primaryColor]
         
+        // Configure unselected icon and title colors
+        let unselected = UITabBarItemAppearance()
+        unselected.normal.iconColor = lightTextColor
+        unselected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: lightTextColor]
+        
         appearance.stackedLayoutAppearance = selected
+        appearance.inlineLayoutAppearance = selected
+        appearance.compactInlineLayoutAppearance = selected
         
         return appearance
+    }
+    
+    private static func createShadowImage() -> UIImage {
+        let rect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        UIGraphicsBeginImageContext(rect.size)
+        
+        if let context = UIGraphicsGetCurrentContext() {
+            let colors = [
+                UIColor.black.withAlphaComponent(0.05).cgColor,
+                UIColor.clear.cgColor
+            ]
+            
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let colorLocations: [CGFloat] = [0.0, 1.0]
+            
+            if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: colorLocations) {
+                context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 0, y: 1), options: [])
+            }
+        }
+        
+        let image = UIGraphicsGetImageFromCurrentImageContext() ?? UIImage()
+        UIGraphicsEndImageContext()
+        
+        return image
     }
 }
 

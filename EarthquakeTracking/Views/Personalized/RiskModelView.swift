@@ -8,6 +8,9 @@ class RiskModelViewController: UIViewController {
     private let viewModel: PersonalizedViewModel
     private var cancellables = Set<AnyCancellable>()
     
+    // Risk bölgesi verilerini takip etmek için yeni özellik
+    private var riskRegions: [RiskRegion] = []
+    
     // MARK: - UI Elements
     private lazy var mapView: MKMapView = {
         let mapView = MKMapView()
@@ -374,6 +377,7 @@ class RiskModelViewController: UIViewController {
     private func updateMapOverlays(coordinates: [CLLocationCoordinate2D]) {
         // Eski katmanları temizle
         mapView.removeOverlays(mapView.overlays)
+        riskRegions.removeAll()
         
         // Koordinatlar boş ise çık
         if coordinates.isEmpty {
@@ -384,41 +388,145 @@ class RiskModelViewController: UIViewController {
         if let userLocation = viewModel.userLocation {
             let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
             mapView.setRegion(region, animated: true)
-        }
-        
-        // Risk haritası katmanını oluştur ve ekle
-        createHeatmapOverlay(coordinates: coordinates)
-    }
-    
-    private func createHeatmapOverlay(coordinates: [CLLocationCoordinate2D]) {
-        // Gerçek bir uygulamada, burada daha karmaşık ısı haritası algoritmaları kullanılabilir
-        // Basit bir demo için, her noktanın etrafında dairesel bir ısı noktası oluşturuyoruz
-        
-        for coordinate in coordinates {
-            // Deprem riskine bağlı olarak yarıçapı ve rengi belirle
-            var radius: CLLocationDistance = 500 // 500 metre
-            var color: UIColor = .systemGreen
             
-            // Rastgele risk seviyesi (gerçek bir uygulamada, bu veriler gerçek analiz sonuçlarına göre belirlenirdi)
-            let riskValue = Double.random(in: 0...1)
+            // Kullanıcı konumu için doğru riski yansıt
+            // ÖNEMLİ: Burada kullanıcı konumu için riski, viewModel.riskLevelForCurrentLocation'a göre ayarlıyoruz
+            var userRiskValue: Double
+            var userRiskLevel: RiskLevel
             
-            if riskValue > 0.7 {
-                radius = 800
-                color = .systemRed.withAlphaComponent(0.6)
-            } else if riskValue > 0.4 {
-                radius = 600
-                color = .systemOrange.withAlphaComponent(0.6)
-            } else {
-                color = .systemGreen.withAlphaComponent(0.6)
+            switch viewModel.riskLevelForCurrentLocation {
+            case .low:
+                userRiskValue = 0.3 // Düşük risk değeri
+                userRiskLevel = .low
+            case .medium:
+                userRiskValue = 0.6 // Orta risk değeri
+                userRiskLevel = .medium
+            case .high:
+                userRiskValue = 0.9 // Yüksek risk değeri
+                userRiskLevel = .high
+            case .unknown:
+                userRiskValue = 0.1 // Bilinmeyen risk değeri
+                userRiskLevel = .low
             }
             
-            // Dairesel bölge oluştur
-            let circle = MKCircle(center: coordinate, radius: radius)
-            circle.title = String(riskValue) // Riski başlığa ekle (render'da kullanmak için)
-            
-            // Haritaya ekle
+            // Kullanıcı konumu için risk bölgesi oluştur
+            let userRegion = RiskRegion(
+                coordinate: userLocation,
+                radius: 800,
+                riskValue: userRiskValue,
+                riskLevel: userRiskLevel
+            )
+            riskRegions.append(userRegion)
+        }
+        
+        // Tüm haritayı kapsayan benzersiz risk bölgeleri oluştur
+        createNonOverlappingRiskZones()
+        
+        // Tüm risk bölgelerini haritaya ekle
+        for region in riskRegions {
+            let circle = MKCircle(center: region.coordinate, radius: region.radius)
+            circle.title = String(region.riskValue)
             mapView.addOverlay(circle)
         }
+    }
+    
+    private func createNonOverlappingRiskZones() {
+        guard let userLocation = viewModel.userLocation else { return }
+        
+        let centerLat = userLocation.latitude
+        let centerLon = userLocation.longitude
+        
+        // Harita için bölgelere ayır
+        // Hedef: 25-30 adet risk bölgesi oluştur
+        let targetRegionCount = 25
+        let attempts = 100 // Yeterli sayıda bölge oluşturmak için maksimum deneme sayısı
+        
+        for _ in 0..<attempts {
+            // Rastgele bir konum oluştur
+            let latOffset = Double.random(in: -0.05...0.05)
+            let lonOffset = Double.random(in: -0.05...0.05)
+            
+            let lat = centerLat + latOffset
+            let lon = centerLon + lonOffset
+            let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            
+            // Bu konumun mevcut bölgelerle çakışıp çakışmadığını kontrol et
+            if isCoordinateTooCloseToExistingRegions(coordinate) {
+                continue // Çakışıyorsa bu konumu atla
+            }
+            
+            // Risk seviyesi seç - bölgeye göre değil tamamen rastgele
+            let riskValue = Double.random(in: 0.1...1.0)
+            let riskLevel: RiskLevel
+            let radius: CLLocationDistance
+            
+            // Risk seviyesini belirle
+            if riskValue > 0.7 {
+                riskLevel = .high
+                radius = Double.random(in: 500...600)
+            } else if riskValue > 0.4 {
+                riskLevel = .medium
+                radius = Double.random(in: 400...550)
+            } else {
+                riskLevel = .low
+                radius = Double.random(in: 350...500)
+            }
+            
+            // Yeni risk bölgesi oluştur
+            let region = RiskRegion(
+                coordinate: coordinate,
+                radius: radius,
+                riskValue: riskValue,
+                riskLevel: riskLevel
+            )
+            
+            // Listeye ekle
+            riskRegions.append(region)
+            
+            // Hedef sayıya ulaştıysak döngüden çık
+            if riskRegions.count >= targetRegionCount {
+                break
+            }
+        }
+    }
+    
+    // Yeni bir koordinatın mevcut bölgelerle çakışıp çakışmadığını kontrol et
+    private func isCoordinateTooCloseToExistingRegions(_ coordinate: CLLocationCoordinate2D) -> Bool {
+        for region in riskRegions {
+            let existingLocation = region.coordinate
+            
+            // İki koordinat arasındaki mesafeyi hesapla
+            let distance = calculateDistance(
+                lat1: coordinate.latitude,
+                lon1: coordinate.longitude,
+                lat2: existingLocation.latitude,
+                lon2: existingLocation.longitude
+            )
+            
+            // Minimum güvenli mesafe (çakışmayı önlemek için iki bölgenin yarıçaplarının toplamı + ek mesafe)
+            let minSafeDistance = region.radius + 600 // Ortalama bölge yarıçapı + ek mesafe (metre cinsinden)
+            
+            if distance < minSafeDistance {
+                return true // Çok yakın, çakışma riski var
+            }
+        }
+        
+        return false // Güvenli mesafede
+    }
+    
+    // İki koordinat arasındaki mesafeyi hesapla (metre cinsinden)
+    private func calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
+        let earthRadius = 6371000.0 // Dünya yarıçapı (metre cinsinden)
+        
+        let dLat = (lat2 - lat1) * .pi / 180.0
+        let dLon = (lon2 - lon1) * .pi / 180.0
+        
+        let a = sin(dLat/2) * sin(dLat/2) +
+            cos(lat1 * .pi / 180.0) * cos(lat2 * .pi / 180.0) *
+            sin(dLon/2) * sin(dLon/2)
+        
+        let c = 2 * atan2(sqrt(a), sqrt(1-a))
+        return earthRadius * c
     }
 }
 
@@ -431,24 +539,39 @@ extension RiskModelViewController: MKMapViewDelegate {
             // Risk değerine göre renk ayarla
             if let riskString = circle.title, let riskValue = Double(riskString) {
                 if riskValue > 0.7 {
-                    renderer.fillColor = .systemRed.withAlphaComponent(0.3)
-                    renderer.strokeColor = .systemRed
+                    // Yüksek risk - kırmızı
+                    renderer.fillColor = UIColor.systemRed.withAlphaComponent(0.3)
+                    renderer.strokeColor = UIColor.systemRed
+                    renderer.lineWidth = 1.5
                 } else if riskValue > 0.4 {
-                    renderer.fillColor = .systemOrange.withAlphaComponent(0.3)
-                    renderer.strokeColor = .systemOrange
+                    // Orta risk - turuncu/sarı
+                    renderer.fillColor = UIColor.systemOrange.withAlphaComponent(0.3)
+                    renderer.strokeColor = UIColor.systemOrange
+                    renderer.lineWidth = 1.0
                 } else {
-                    renderer.fillColor = .systemGreen.withAlphaComponent(0.3)
-                    renderer.strokeColor = .systemGreen
+                    // Düşük risk - yeşil
+                    renderer.fillColor = UIColor.systemGreen.withAlphaComponent(0.3)
+                    renderer.strokeColor = UIColor.systemGreen
+                    renderer.lineWidth = 0.5
                 }
             } else {
-                renderer.fillColor = .systemBlue.withAlphaComponent(0.3)
-                renderer.strokeColor = .systemBlue
+                // Varsayılan stil
+                renderer.fillColor = UIColor.systemBlue.withAlphaComponent(0.3)
+                renderer.strokeColor = UIColor.systemBlue
+                renderer.lineWidth = 1.0
             }
             
-            renderer.lineWidth = 1
             return renderer
         }
         
         return MKOverlayRenderer(overlay: overlay)
     }
+}
+
+// MARK: - Risk Region Model
+struct RiskRegion {
+    let coordinate: CLLocationCoordinate2D
+    let radius: CLLocationDistance
+    let riskValue: Double
+    let riskLevel: RiskLevel
 }
