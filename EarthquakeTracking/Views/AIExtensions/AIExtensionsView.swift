@@ -15,7 +15,7 @@ class AIExtensionsViewController: UIViewController {
     // MARK: - UI Setup
     private func setupUI() {
         title = "AI Eklentileri"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = AppTheme.backgroundColor
         
         // Scroll View
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -41,14 +41,34 @@ class AIExtensionsViewController: UIViewController {
         setupHeader()
         
         // Mistral AI Chatbot Bölümü
-        setupMistralSection()
+        setupAISection()
     }
     
     private func setupHeader() {
         let headerView = UIView()
         headerView.translatesAutoresizingMaskIntoConstraints = false
-        headerView.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.9)
+        headerView.backgroundColor = AppTheme.primaryColor
         headerView.layer.cornerRadius = 16
+        
+        // Add shadow to header
+        headerView.layer.shadowColor = AppTheme.primaryColor.cgColor
+        headerView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        headerView.layer.shadowRadius = 8
+        headerView.layer.shadowOpacity = 0.3
+        
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            AppTheme.primaryColor.cgColor,
+            AppTheme.primaryLightColor.cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+        gradientLayer.cornerRadius = 16
+        
+        let iconContainerView = UIView()
+        iconContainerView.translatesAutoresizingMaskIntoConstraints = false
+        iconContainerView.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+        iconContainerView.layer.cornerRadius = 35
         
         let iconImageView = UIImageView(image: UIImage(systemName: "brain.head.profile"))
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -58,85 +78,132 @@ class AIExtensionsViewController: UIViewController {
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Deprem AI Asistanı"
-        titleLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        titleLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
         titleLabel.textColor = .white
         
         let subtitleLabel = UILabel()
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.text = "Yapay zeka destekli yardımcınız"
+        subtitleLabel.text = "Yapay zeka destekli kişisel deprem asistanı"
         subtitleLabel.font = UIFont.systemFont(ofSize: 16)
         subtitleLabel.textColor = .white
+        subtitleLabel.numberOfLines = 0
         
-        headerView.addSubview(iconImageView)
+        headerView.addSubview(iconContainerView)
+        iconContainerView.addSubview(iconImageView)
         headerView.addSubview(titleLabel)
         headerView.addSubview(subtitleLabel)
         
         contentView.addSubview(headerView)
         
+        // Gradient layer needs to be added after the view is added to the hierarchy
+        headerView.layer.insertSublayer(gradientLayer, at: 0)
+        
         NSLayoutConstraint.activate([
             headerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
             headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            headerView.heightAnchor.constraint(equalToConstant: 180),
+            headerView.heightAnchor.constraint(equalToConstant: 200),
             
-            iconImageView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
-            iconImageView.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 60),
-            iconImageView.heightAnchor.constraint(equalToConstant: 60),
+            iconContainerView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 30),
+            iconContainerView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 30),
+            iconContainerView.widthAnchor.constraint(equalToConstant: 70),
+            iconContainerView.heightAnchor.constraint(equalToConstant: 70),
             
-            titleLabel.topAnchor.constraint(equalTo: iconImageView.bottomAnchor, constant: 16),
-            titleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor),
+            iconImageView.centerXAnchor.constraint(equalTo: iconContainerView.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconContainerView.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 40),
+            iconImageView.heightAnchor.constraint(equalToConstant: 40),
+            
+            titleLabel.topAnchor.constraint(equalTo: iconContainerView.bottomAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 30),
+            titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -30),
             
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            subtitleLabel.centerXAnchor.constraint(equalTo: headerView.centerXAnchor)
+            subtitleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 30),
+            subtitleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -30)
         ])
+        
+        // Update layout to set gradient layer frame
+        headerView.layoutIfNeeded()
+        gradientLayer.frame = headerView.bounds
     }
     
-    private func setupMistralSection() {
-        let sectionTitle = UILabel()
-        sectionTitle.translatesAutoresizingMaskIntoConstraints = false
-        sectionTitle.text = "AI Destekli Özellikler"
-        sectionTitle.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        sectionTitle.textColor = .label
-        
-        let mistralCard = createMistralCard()
+    private func setupAISection() {
+        let sectionTitle = createSectionTitle(title: "AI Destekli Özellikler")
+        let mistralCard = createChatbotCard()
+        let earthquakePredictionCard = createPredictionCard()
+        let safetyAssistantCard = createSafetyAssistantCard()
         
         contentView.addSubview(sectionTitle)
         contentView.addSubview(mistralCard)
+        contentView.addSubview(earthquakePredictionCard)
+        contentView.addSubview(safetyAssistantCard)
         
         NSLayoutConstraint.activate([
             sectionTitle.topAnchor.constraint(equalTo: contentView.subviews[0].bottomAnchor, constant: 30),
             sectionTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            sectionTitle.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
             mistralCard.topAnchor.constraint(equalTo: sectionTitle.bottomAnchor, constant: 16),
             mistralCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             mistralCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            mistralCard.heightAnchor.constraint(equalToConstant: 160),
-            mistralCard.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30)
+            
+            earthquakePredictionCard.topAnchor.constraint(equalTo: mistralCard.bottomAnchor, constant: 16),
+            earthquakePredictionCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            earthquakePredictionCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            safetyAssistantCard.topAnchor.constraint(equalTo: earthquakePredictionCard.bottomAnchor, constant: 16),
+            safetyAssistantCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            safetyAssistantCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            safetyAssistantCard.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30)
         ])
     }
     
-    private func createMistralCard() -> UIView {
+    private func createSectionTitle(title: String) -> UIView {
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        titleLabel.textColor = AppTheme.titleTextColor
+        
+        let lineView = UIView()
+        lineView.translatesAutoresizingMaskIntoConstraints = false
+        lineView.backgroundColor = AppTheme.primaryColor
+        
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(lineView)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            
+            lineView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            lineView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            lineView.widthAnchor.constraint(equalToConstant: 40),
+            lineView.heightAnchor.constraint(equalToConstant: 3),
+            lineView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        return containerView
+    }
+    
+    private func createChatbotCard() -> UIView {
         let cardView = UIView()
         cardView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.backgroundColor = .secondarySystemBackground
-        cardView.layer.cornerRadius = 20
+        AppTheme.applyCardStyle(to: cardView)
         
-        // Gölge efekti
-        cardView.layer.shadowColor = UIColor.black.cgColor
-        cardView.layer.shadowOffset = CGSize(width: 0, height: 5)
-        cardView.layer.shadowRadius = 10
-        cardView.layer.shadowOpacity = 0.1
+        // Add tap gesture
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(openMistralChatbot))
+        cardView.addGestureRecognizer(tapGesture)
+        cardView.isUserInteractionEnabled = true
         
-        // İçerik view
-        let contentContainer = UIView()
-        contentContainer.translatesAutoresizingMaskIntoConstraints = false
-        contentContainer.backgroundColor = .clear
-        
-        // İcon
+        // Icon container
         let iconContainer = UIView()
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = .systemIndigo
+        iconContainer.backgroundColor = AppTheme.primaryColor
         iconContainer.layer.cornerRadius = 30
         
         let iconImageView = UIImageView(image: UIImage(systemName: "message.fill"))
@@ -144,47 +211,56 @@ class AIExtensionsViewController: UIViewController {
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.tintColor = .white
         
-        // Başlık
+        // Content
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Deprem Chatbot"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        titleLabel.textColor = .label
+        titleLabel.textColor = AppTheme.titleTextColor
         
-        // Açıklama
         let descriptionLabel = UILabel()
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         descriptionLabel.text = "Depremler hakkında tüm sorularınızı yanıtlayan yapay zeka asistanı"
         descriptionLabel.font = UIFont.systemFont(ofSize: 14)
-        descriptionLabel.textColor = .secondaryLabel
+        descriptionLabel.textColor = AppTheme.bodyTextColor
         descriptionLabel.numberOfLines = 0
         
-        // Buton
+        // Tag: "Yeni" etiketi
+        let tagView = UIView()
+        tagView.translatesAutoresizingMaskIntoConstraints = false
+        tagView.backgroundColor = AppTheme.primaryColor
+        tagView.layer.cornerRadius = 10
+        
+        let tagLabel = UILabel()
+        tagLabel.translatesAutoresizingMaskIntoConstraints = false
+        tagLabel.text = "YENİ"
+        tagLabel.font = UIFont.systemFont(ofSize: 10, weight: .bold)
+        tagLabel.textColor = .white
+        
+        // Button
         let actionButton = UIButton(type: .system)
         actionButton.translatesAutoresizingMaskIntoConstraints = false
         actionButton.setTitle("Konuşmaya Başla", for: .normal)
         actionButton.setImage(UIImage(systemName: "arrow.forward.circle.fill"), for: .normal)
-        actionButton.tintColor = .systemIndigo
-        actionButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        AppTheme.applyButtonStyle(to: actionButton)
         actionButton.addTarget(self, action: #selector(openMistralChatbot), for: .touchUpInside)
         
-        // View hiyerarşisi
+        // Add subviews
         iconContainer.addSubview(iconImageView)
-        contentContainer.addSubview(iconContainer)
-        contentContainer.addSubview(titleLabel)
-        contentContainer.addSubview(descriptionLabel)
-        contentContainer.addSubview(actionButton)
-        cardView.addSubview(contentContainer)
+        tagView.addSubview(tagLabel)
         
-        // Constraints
+        cardView.addSubview(iconContainer)
+        cardView.addSubview(titleLabel)
+        cardView.addSubview(descriptionLabel)
+        cardView.addSubview(tagView)
+        cardView.addSubview(actionButton)
+        
+        // Set constraints
         NSLayoutConstraint.activate([
-            contentContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
-            contentContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
-            contentContainer.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
-            contentContainer.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20),
+            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
             
-            iconContainer.topAnchor.constraint(equalTo: contentContainer.topAnchor),
-            iconContainer.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            iconContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
             iconContainer.widthAnchor.constraint(equalToConstant: 60),
             iconContainer.heightAnchor.constraint(equalToConstant: 60),
             
@@ -193,23 +269,206 @@ class AIExtensionsViewController: UIViewController {
             iconImageView.widthAnchor.constraint(equalToConstant: 30),
             iconImageView.heightAnchor.constraint(equalToConstant: 30),
             
-            titleLabel.topAnchor.constraint(equalTo: contentContainer.topAnchor, constant: 5),
-            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            tagView.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            tagView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            tagView.widthAnchor.constraint(equalToConstant: 40),
+            tagView.heightAnchor.constraint(equalToConstant: 20),
+            
+            tagLabel.centerXAnchor.constraint(equalTo: tagView.centerXAnchor),
+            tagLabel.centerYAnchor.constraint(equalTo: tagView.centerYAnchor),
+            
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: tagView.leadingAnchor, constant: -8),
             
             descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
-            descriptionLabel.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            descriptionLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
             
             actionButton.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 16),
-            actionButton.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
-            actionButton.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
+            actionButton.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            actionButton.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20)
         ])
         
-        // Tüm karta tıklama özelliği ekle
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(openMistralChatbot))
-        cardView.addGestureRecognizer(tapGesture)
-        cardView.isUserInteractionEnabled = true
+        return cardView
+    }
+    
+    private func createPredictionCard() -> UIView {
+        let cardView = UIView()
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        AppTheme.applyCardStyle(to: cardView)
+        
+        // Add coming soon overlay
+        let overlayView = UIView()
+        overlayView.translatesAutoresizingMaskIntoConstraints = false
+        overlayView.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.7)
+        overlayView.layer.cornerRadius = 16
+        
+        let comingSoonLabel = UILabel()
+        comingSoonLabel.translatesAutoresizingMaskIntoConstraints = false
+        comingSoonLabel.text = "YAKINDA"
+        comingSoonLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        comingSoonLabel.textColor = AppTheme.primaryColor
+        comingSoonLabel.textAlignment = .center
+        
+        // Icon container
+        let iconContainer = UIView()
+        iconContainer.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.backgroundColor = AppTheme.secondaryColor
+        iconContainer.layer.cornerRadius = 30
+        
+        let iconImageView = UIImageView(image: UIImage(systemName: "chart.line.uptrend.xyaxis"))
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.tintColor = .white
+        
+        // Content
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Deprem Tahmin Motoru"
+        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textColor = AppTheme.titleTextColor
+        
+        let descriptionLabel = UILabel()
+        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        descriptionLabel.text = "Gelişmiş makine öğrenmesi ile deprem olasılıklarını analiz eden yapay zeka modeli"
+        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
+        descriptionLabel.textColor = AppTheme.bodyTextColor
+        descriptionLabel.numberOfLines = 0
+        
+        // Add subviews
+        iconContainer.addSubview(iconImageView)
+        
+        cardView.addSubview(iconContainer)
+        cardView.addSubview(titleLabel)
+        cardView.addSubview(descriptionLabel)
+        
+        // Add overlay
+        cardView.addSubview(overlayView)
+        overlayView.addSubview(comingSoonLabel)
+        
+        // Set constraints
+        NSLayoutConstraint.activate([
+            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            
+            iconContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
+            iconContainer.widthAnchor.constraint(equalToConstant: 60),
+            iconContainer.heightAnchor.constraint(equalToConstant: 60),
+            
+            iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 30),
+            iconImageView.heightAnchor.constraint(equalToConstant: 30),
+            
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            
+            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            descriptionLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            descriptionLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20),
+            
+            // Overlay constraints
+            overlayView.topAnchor.constraint(equalTo: cardView.topAnchor),
+            overlayView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            overlayView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            overlayView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+            
+            comingSoonLabel.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
+            comingSoonLabel.centerYAnchor.constraint(equalTo: overlayView.centerYAnchor)
+        ])
+        
+        return cardView
+    }
+    
+    private func createSafetyAssistantCard() -> UIView {
+        let cardView = UIView()
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        AppTheme.applyCardStyle(to: cardView)
+        
+        // Add coming soon overlay
+        let overlayView = UIView()
+        overlayView.translatesAutoresizingMaskIntoConstraints = false
+        overlayView.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.7)
+        overlayView.layer.cornerRadius = 16
+        
+        let comingSoonLabel = UILabel()
+        comingSoonLabel.translatesAutoresizingMaskIntoConstraints = false
+        comingSoonLabel.text = "YAKINDA"
+        comingSoonLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        comingSoonLabel.textColor = AppTheme.primaryColor
+        comingSoonLabel.textAlignment = .center
+        
+        // Icon container
+        let iconContainer = UIView()
+        iconContainer.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.backgroundColor = AppTheme.accentColor
+        iconContainer.layer.cornerRadius = 30
+        
+        let iconImageView = UIImageView(image: UIImage(systemName: "shield.lefthalf.filled"))
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.tintColor = .white
+        
+        // Content
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Deprem Güvenlik Asistanı"
+        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        titleLabel.textColor = AppTheme.titleTextColor
+        
+        let descriptionLabel = UILabel()
+        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        descriptionLabel.text = "Size özel güvenlik tavsiyeleri ve binanız için deprem değerlendirmesi sunan yapay zeka asistanı"
+        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
+        descriptionLabel.textColor = AppTheme.bodyTextColor
+        descriptionLabel.numberOfLines = 0
+        
+        // Add subviews
+        iconContainer.addSubview(iconImageView)
+        
+        cardView.addSubview(iconContainer)
+        cardView.addSubview(titleLabel)
+        cardView.addSubview(descriptionLabel)
+        
+        // Add overlay
+        cardView.addSubview(overlayView)
+        overlayView.addSubview(comingSoonLabel)
+        
+        // Set constraints
+        NSLayoutConstraint.activate([
+            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+            
+            iconContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
+            iconContainer.widthAnchor.constraint(equalToConstant: 60),
+            iconContainer.heightAnchor.constraint(equalToConstant: 60),
+            
+            iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 30),
+            iconImageView.heightAnchor.constraint(equalToConstant: 30),
+            
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            
+            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 20),
+            descriptionLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            descriptionLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20),
+            
+            // Overlay constraints
+            overlayView.topAnchor.constraint(equalTo: cardView.topAnchor),
+            overlayView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            overlayView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            overlayView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor),
+            
+            comingSoonLabel.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
+            comingSoonLabel.centerYAnchor.constraint(equalTo: overlayView.centerYAnchor)
+        ])
         
         return cardView
     }

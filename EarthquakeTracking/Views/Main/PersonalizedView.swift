@@ -25,24 +25,60 @@ class PersonalizedViewController: UIViewController {
         return view
     }()
     
+    private lazy var headerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = AppTheme.primaryColor
+        view.layer.cornerRadius = 16
+        
+        // Add shadow
+        view.layer.shadowColor = AppTheme.primaryColor.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 4)
+        view.layer.shadowRadius = 8
+        view.layer.shadowOpacity = 0.3
+        
+        return view
+    }()
+    
+    private lazy var headerIconView: UIImageView = {
+        let imageView = UIImageView(image: UIImage(systemName: "person.fill.viewfinder"))
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = .white
+        return imageView
+    }()
+    
     private lazy var headerLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Kişiselleştirilmiş Deprem Özellikleri"
         label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
-        label.textColor = .label
-        label.textAlignment = .center
+        label.textColor = .white
+        label.numberOfLines = 2
         return label
     }()
     
-    private lazy var sectionStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.axis = .vertical
-        stackView.spacing = 20
-        stackView.distribution = .fill
-        stackView.alignment = .fill
-        return stackView
+    private lazy var headerDescriptionLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Size ve konumunuza özel deprem bilgileri ve uyarılar alın."
+        label.font = UIFont.systemFont(ofSize: 14)
+        label.textColor = .white.withAlphaComponent(0.9)
+        label.numberOfLines = 0
+        return label
+    }()
+    
+    private lazy var featuresContainerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .clear
+        return view
+    }()
+    
+    private lazy var riskIndicatorView: RiskIndicatorView = {
+        let view = RiskIndicatorView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
     
     // MARK: - Lifecycle
@@ -62,21 +98,23 @@ class PersonalizedViewController: UIViewController {
     // MARK: - Setup
     private func setupUI() {
         title = "Kişiselleştirilmiş"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = AppTheme.backgroundColor
         
         // Scroll View Hierarchy
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
         // Content View Hierarchy
-        contentView.addSubview(headerLabel)
-        contentView.addSubview(sectionStackView)
+        contentView.addSubview(headerView)
+        headerView.addSubview(headerIconView)
+        headerView.addSubview(headerLabel)
+        headerView.addSubview(headerDescriptionLabel)
         
-        // Add AI Feature Sections
-        sectionStackView.addArrangedSubview(createNotificationSection())
-        sectionStackView.addArrangedSubview(createSimulationSection())
-        sectionStackView.addArrangedSubview(createARScanSection())
-        sectionStackView.addArrangedSubview(createRiskModelSection())
+        contentView.addSubview(riskIndicatorView)
+        contentView.addSubview(featuresContainerView)
+        
+        // Setup Features
+        setupFeatures()
         
         // Setup Constraints
         NSLayoutConstraint.activate([
@@ -91,15 +129,184 @@ class PersonalizedViewController: UIViewController {
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             
-            headerLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-            headerLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            headerLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            // Header View
+            headerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            headerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            headerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             
-            sectionStackView.topAnchor.constraint(equalTo: headerLabel.bottomAnchor, constant: 24),
-            sectionStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            sectionStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            sectionStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
+            headerIconView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
+            headerIconView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            headerIconView.widthAnchor.constraint(equalToConstant: 40),
+            headerIconView.heightAnchor.constraint(equalToConstant: 40),
+            
+            headerLabel.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
+            headerLabel.leadingAnchor.constraint(equalTo: headerIconView.trailingAnchor, constant: 16),
+            headerLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
+            
+            headerDescriptionLabel.topAnchor.constraint(equalTo: headerLabel.bottomAnchor, constant: 8),
+            headerDescriptionLabel.leadingAnchor.constraint(equalTo: headerIconView.trailingAnchor, constant: 16),
+            headerDescriptionLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
+            headerDescriptionLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -20),
+            
+            // Risk Indicator View
+            riskIndicatorView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 24),
+            riskIndicatorView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            riskIndicatorView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            
+            // Features Container
+            featuresContainerView.topAnchor.constraint(equalTo: riskIndicatorView.bottomAnchor, constant: 24),
+            featuresContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            featuresContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            featuresContainerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
+    }
+    
+    private func setupFeatures() {
+        let featuresStackView = UIStackView()
+        featuresStackView.translatesAutoresizingMaskIntoConstraints = false
+        featuresStackView.axis = .vertical
+        featuresStackView.spacing = 20
+        featuresStackView.distribution = .fill
+        featuresStackView.alignment = .fill
+        
+        featuresContainerView.addSubview(featuresStackView)
+        
+        NSLayoutConstraint.activate([
+            featuresStackView.topAnchor.constraint(equalTo: featuresContainerView.topAnchor),
+            featuresStackView.leadingAnchor.constraint(equalTo: featuresContainerView.leadingAnchor),
+            featuresStackView.trailingAnchor.constraint(equalTo: featuresContainerView.trailingAnchor),
+            featuresStackView.bottomAnchor.constraint(equalTo: featuresContainerView.bottomAnchor)
+        ])
+        
+        // Feature 1: Notification Settings
+        let notificationFeature = createFeatureCard(
+            title: "Kişiselleştirilmiş Uyarı Sistemi",
+            description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin.",
+            iconName: "bell.fill",
+            color: AppTheme.primaryColor,
+            action: #selector(openNotificationSettings)
+        )
+        
+        // Feature 2: Earthquake Simulation
+        let simulationFeature = createFeatureCard(
+            title: "Deprem Simülasyonu",
+            description: "Farklı büyüklüklerdeki depremlerin etkilerini deneyimleyin.",
+            iconName: "waveform.path.ecg",
+            color: AppTheme.secondaryColor,
+            action: #selector(openSimulation)
+        )
+        
+        // Feature 3: AR Home Safety Scan
+        let arScanFeature = createFeatureCard(
+            title: "AR Ev Güvenliği Taraması",
+            description: "Artırılmış gerçeklik ile evinizin deprem güvenliğini analiz edin.",
+            iconName: "camera.viewfinder",
+            color: AppTheme.accentColor,
+            action: #selector(openARScan)
+        )
+        
+        // Feature 4: Risk Model
+        let riskModelFeature = createFeatureCard(
+            title: "Deprem Riski Tahmin Modeli",
+            description: "Yapay zeka ile bölgenizdeki deprem riskini görüntüleyin.",
+            iconName: "map.fill",
+            color: AppTheme.primaryLightColor,
+            action: #selector(openRiskModel)
+        )
+        
+        // Add features to stack view
+        featuresStackView.addArrangedSubview(notificationFeature)
+        featuresStackView.addArrangedSubview(simulationFeature)
+        featuresStackView.addArrangedSubview(arScanFeature)
+        featuresStackView.addArrangedSubview(riskModelFeature)
+    }
+    
+    private func createFeatureCard(title: String, description: String, iconName: String, color: UIColor, action: Selector) -> UIView {
+        let cardView = UIView()
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        AppTheme.applyCardStyle(to: cardView)
+        
+        // Make the entire card clickable
+        let tapGesture = UITapGestureRecognizer(target: self, action: action)
+        cardView.addGestureRecognizer(tapGesture)
+        cardView.isUserInteractionEnabled = true
+        
+        // Icon container
+        let iconContainer = UIView()
+        iconContainer.translatesAutoresizingMaskIntoConstraints = false
+        iconContainer.backgroundColor = color
+        iconContainer.layer.cornerRadius = 25
+        
+        // Add shadow to icon
+        iconContainer.layer.shadowColor = color.cgColor
+        iconContainer.layer.shadowOffset = CGSize(width: 0, height: 3)
+        iconContainer.layer.shadowRadius = 5
+        iconContainer.layer.shadowOpacity = 0.4
+        
+        // Icon
+        let iconImageView = UIImageView(image: UIImage(systemName: iconName))
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.tintColor = .white
+        
+        // Title
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+        titleLabel.textColor = AppTheme.titleTextColor
+        
+        // Description
+        let descriptionLabel = UILabel()
+        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        descriptionLabel.text = description
+        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
+        descriptionLabel.textColor = AppTheme.bodyTextColor
+        descriptionLabel.numberOfLines = 0
+        
+        // Arrow indicator
+        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+        arrowImageView.translatesAutoresizingMaskIntoConstraints = false
+        arrowImageView.contentMode = .scaleAspectFit
+        arrowImageView.tintColor = color
+        
+        // Add views to hierarchy
+        iconContainer.addSubview(iconImageView)
+        cardView.addSubview(iconContainer)
+        cardView.addSubview(titleLabel)
+        cardView.addSubview(descriptionLabel)
+        cardView.addSubview(arrowImageView)
+        
+        // Set constraints
+        NSLayoutConstraint.activate([
+            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            
+            iconContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
+            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
+            iconContainer.widthAnchor.constraint(equalToConstant: 50),
+            iconContainer.heightAnchor.constraint(equalToConstant: 50),
+            
+            iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 24),
+            iconImageView.heightAnchor.constraint(equalToConstant: 24),
+            
+            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
+            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: arrowImageView.leadingAnchor, constant: -8),
+            
+            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
+            descriptionLabel.trailingAnchor.constraint(equalTo: arrowImageView.leadingAnchor, constant: -8),
+            descriptionLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
+            
+            arrowImageView.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
+            arrowImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
+            arrowImageView.widthAnchor.constraint(equalToConstant: 16),
+            arrowImageView.heightAnchor.constraint(equalToConstant: 16)
+        ])
+        
+        return cardView
     }
     
     private func setupLocationManager() {
@@ -110,140 +317,24 @@ class PersonalizedViewController: UIViewController {
     }
     
     private func setupBindings() {
-        // Deprem simülasyonu durumunu dinle
-        viewModel.$isSimulationActive
+        // Risk level changes
+        viewModel.$riskLevelForCurrentLocation
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] isActive in
-                // Simülasyon durumunda UI güncellemesi
-                self?.updateSimulationUI(isActive: isActive)
+            .sink { [weak self] riskLevel in
+                self?.riskIndicatorView.updateRiskLevel(riskLevel)
             }
             .store(in: &cancellables)
         
-        // AR tarama durumunu dinle
-        viewModel.$isARScanActive
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isActive in
-                // AR taraması durumunda UI güncellemesi
-                self?.updateARScanUI(isActive: isActive)
-            }
-            .store(in: &cancellables)
-        
-        // Risk model yükleme durumunu dinle
+        // Loading state
         viewModel.$isLoadingRiskData
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isLoading in
-                // Risk model yüklenirken UI güncellemesi
-                self?.updateRiskModelUI(isLoading: isLoading)
+                self?.riskIndicatorView.setLoading(isLoading)
             }
             .store(in: &cancellables)
     }
     
-    // MARK: - Section Builders
-    
-    private func createNotificationSection() -> UIView {
-        let sectionView = FeatureSectionView(
-            title: "Kişiselleştirilmiş Uyarı Sistemi",
-            icon: UIImage(systemName: "bell.fill"),
-            description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin. Ailenizin veya sevdiklerinizin yaşadığı bölgelerdeki depremlerden anında haberdar olun."
-        )
-        
-        let openButton = UIButton(type: .system)
-        openButton.translatesAutoresizingMaskIntoConstraints = false
-        openButton.setTitle("Uyarıları Özelleştir", for: .normal)
-        openButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        openButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        openButton.backgroundColor = .systemBlue
-        openButton.tintColor = .white
-        openButton.layer.cornerRadius = 10
-        openButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
-        openButton.addTarget(self, action: #selector(openNotificationSettings), for: .touchUpInside)
-        
-        sectionView.addActionButton(openButton)
-        return sectionView
-    }
-    
-    private func createSimulationSection() -> UIView {
-        let sectionView = FeatureSectionView(
-            title: "Deprem Simülasyonu",
-            icon: UIImage(systemName: "waveform.path.ecg"),
-            description: "Farklı büyüklüklerdeki depremlerin nasıl hissedileceğini deneyimleyin. Deprem anında neler yaşanabileceğini öğrenmek için güvenli bir simülasyon."
-        )
-        
-        let openButton = UIButton(type: .system)
-        openButton.translatesAutoresizingMaskIntoConstraints = false
-        openButton.setTitle("Simülasyonu Başlat", for: .normal)
-        openButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        openButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        openButton.backgroundColor = .systemOrange
-        openButton.tintColor = .white
-        openButton.layer.cornerRadius = 10
-        openButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
-        openButton.addTarget(self, action: #selector(openSimulation), for: .touchUpInside)
-        
-        sectionView.addActionButton(openButton)
-        return sectionView
-    }
-    
-    private func createARScanSection() -> UIView {
-        let sectionView = FeatureSectionView(
-            title: "AR Ev Güvenliği Taraması",
-            icon: UIImage(systemName: "camera.viewfinder"),
-            description: "Artırılmış gerçeklik teknolojisiyle evinizin depreme karşı güvenliğini tarayın. Potansiyel riskleri belirleyin ve güvenlik önerileri alın."
-        )
-        
-        let openButton = UIButton(type: .system)
-        openButton.translatesAutoresizingMaskIntoConstraints = false
-        openButton.setTitle("AR Taramayı Başlat", for: .normal)
-        openButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        openButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        openButton.backgroundColor = .systemGreen
-        openButton.tintColor = .white
-        openButton.layer.cornerRadius = 10
-        openButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
-        openButton.addTarget(self, action: #selector(openARScan), for: .touchUpInside)
-        
-        sectionView.addActionButton(openButton)
-        return sectionView
-    }
-    
-    private func createRiskModelSection() -> UIView {
-        let sectionView = FeatureSectionView(
-            title: "Deprem Riski Tahmin Modeli",
-            icon: UIImage(systemName: "map.fill"),
-            description: "Yapay zeka ile geçmiş deprem verilerini analiz ederek bölgelerin deprem riskini görüntüleyin. Bölgenizdeki deprem olasılığını tahmin eden gelişmiş model."
-        )
-        
-        let openButton = UIButton(type: .system)
-        openButton.translatesAutoresizingMaskIntoConstraints = false
-        openButton.setTitle("Risk Haritasını Görüntüle", for: .normal)
-        openButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
-        openButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        openButton.backgroundColor = .systemPurple
-        openButton.tintColor = .white
-        openButton.layer.cornerRadius = 10
-        openButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
-        openButton.addTarget(self, action: #selector(openRiskModel), for: .touchUpInside)
-        
-        sectionView.addActionButton(openButton)
-        return sectionView
-    }
-    
-    // MARK: - UI Update Methods
-    
-    private func updateSimulationUI(isActive: Bool) {
-        // Simülasyon aktifliğine göre UI güncellemesi
-    }
-    
-    private func updateARScanUI(isActive: Bool) {
-        // AR tarama aktifliğine göre UI güncellemesi
-    }
-    
-    private func updateRiskModelUI(isLoading: Bool) {
-        // Risk model yüklenmesine göre UI güncellemesi
-    }
-    
-    // MARK: - Action Methods
-    
+    // MARK: - Actions
     @objc private func openNotificationSettings() {
         let notificationVC = NotificationSettingsViewController(viewModel: viewModel)
         navigationController?.pushViewController(notificationVC, animated: true)
@@ -314,90 +405,153 @@ extension PersonalizedViewController: CLLocationManagerDelegate {
     }
 }
 
-// MARK: - Feature Section View
-class FeatureSectionView: UIView {
+// MARK: - RiskIndicatorView
+class RiskIndicatorView: UIView {
     
+    private let containerView = UIView()
     private let titleLabel = UILabel()
-    private let iconImageView = UIImageView()
-    private let descriptionLabel = UILabel()
-    private let actionStackView = UIStackView()
+    private let riskLabel = UILabel()
+    private let riskBar = UIProgressView()
+    private let locationIconView = UIImageView()
+    private let locationLabel = UILabel()
+    private let activityIndicator = UIActivityIndicatorView(style: .medium)
     
-    init(title: String, icon: UIImage?, description: String) {
-        super.init(frame: .zero)
-        setupUI()
-        configure(title: title, icon: icon, description: description)
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    private func setupUI() {
-        // Container View
-        self.backgroundColor = .secondarySystemBackground
-        self.layer.cornerRadius = 12
-        self.clipsToBounds = true
+    private func setupView() {
+        AppTheme.applyCardStyle(to: self)
+        backgroundColor = AppTheme.backgroundColor
         
-        // Icon Image View
-        iconImageView.translatesAutoresizingMaskIntoConstraints = false
-        iconImageView.contentMode = .scaleAspectFit
-        iconImageView.tintColor = .systemBlue
+        // Container
+        containerView.translatesAutoresizingMaskIntoConstraints = false
         
-        // Title Label
+        // Title
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        titleLabel.textColor = .label
-        titleLabel.numberOfLines = 1
+        titleLabel.text = "Bölge Deprem Riski"
+        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        titleLabel.textColor = AppTheme.titleTextColor
         
-        // Description Label
-        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
-        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
-        descriptionLabel.textColor = .secondaryLabel
-        descriptionLabel.numberOfLines = 0
+        // Risk Label
+        riskLabel.translatesAutoresizingMaskIntoConstraints = false
+        riskLabel.text = "Hesaplanıyor..."
+        riskLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        riskLabel.textColor = AppTheme.bodyTextColor
         
-        // Action Stack View
-        actionStackView.translatesAutoresizingMaskIntoConstraints = false
-        actionStackView.axis = .horizontal
-        actionStackView.alignment = .trailing
-        actionStackView.distribution = .fill
-        actionStackView.spacing = 10
+        // Risk Bar
+        riskBar.translatesAutoresizingMaskIntoConstraints = false
+        riskBar.progressTintColor = AppTheme.primaryColor
+        riskBar.trackTintColor = UIColor.systemGray5
+        riskBar.progress = 0.5
+        riskBar.layer.cornerRadius = 4
+        riskBar.clipsToBounds = true
         
-        // Header Stack (Icon + Title)
-        let headerStack = UIStackView(arrangedSubviews: [iconImageView, titleLabel])
-        headerStack.translatesAutoresizingMaskIntoConstraints = false
-        headerStack.axis = .horizontal
-        headerStack.spacing = 8
-        headerStack.alignment = .center
+        // Location Icon
+        locationIconView.translatesAutoresizingMaskIntoConstraints = false
+        locationIconView.image = UIImage(systemName: "location.circle.fill")
+        locationIconView.contentMode = .scaleAspectFit
+        locationIconView.tintColor = AppTheme.primaryColor
         
-        // Content Stack
-        let contentStack = UIStackView(arrangedSubviews: [headerStack, descriptionLabel, actionStackView])
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
-        contentStack.axis = .vertical
-        contentStack.spacing = 12
-        contentStack.alignment = .fill
+        // Location Label
+        locationLabel.translatesAutoresizingMaskIntoConstraints = false
+        locationLabel.text = "Şu anki konumunuz"
+        locationLabel.font = UIFont.systemFont(ofSize: 14)
+        locationLabel.textColor = AppTheme.bodyTextColor
         
-        // Add to view hierarchy
-        addSubview(contentStack)
+        // Activity Indicator
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        activityIndicator.hidesWhenStopped = true
+        activityIndicator.color = AppTheme.primaryColor
+        activityIndicator.startAnimating()
         
-        // Constraints
+        // Add to hierarchy
+        addSubview(containerView)
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(riskLabel)
+        containerView.addSubview(riskBar)
+        containerView.addSubview(locationIconView)
+        containerView.addSubview(locationLabel)
+        containerView.addSubview(activityIndicator)
+        
+        // Set constraints
         NSLayoutConstraint.activate([
-            contentStack.topAnchor.constraint(equalTo: topAnchor, constant: 16),
-            contentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            contentStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            contentStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16),
+            containerView.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+            containerView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
+            containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            containerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16),
             
-            iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            iconImageView.heightAnchor.constraint(equalToConstant: 24)
+            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            
+            riskLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
+            riskLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            riskLabel.trailingAnchor.constraint(equalTo: activityIndicator.leadingAnchor, constant: -8),
+            
+            activityIndicator.centerYAnchor.constraint(equalTo: riskLabel.centerYAnchor),
+            activityIndicator.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            activityIndicator.widthAnchor.constraint(equalToConstant: 20),
+            activityIndicator.heightAnchor.constraint(equalToConstant: 20),
+            
+            riskBar.topAnchor.constraint(equalTo: riskLabel.bottomAnchor, constant: 16),
+            riskBar.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            riskBar.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            riskBar.heightAnchor.constraint(equalToConstant: 8),
+            
+            locationIconView.topAnchor.constraint(equalTo: riskBar.bottomAnchor, constant: 16),
+            locationIconView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            locationIconView.widthAnchor.constraint(equalToConstant: 16),
+            locationIconView.heightAnchor.constraint(equalToConstant: 16),
+            
+            locationLabel.centerYAnchor.constraint(equalTo: locationIconView.centerYAnchor),
+            locationLabel.leadingAnchor.constraint(equalTo: locationIconView.trailingAnchor, constant: 8),
+            locationLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            locationLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
     }
     
-    private func configure(title: String, icon: UIImage?, description: String) {
-        titleLabel.text = title
-        iconImageView.image = icon
-        descriptionLabel.text = description
+    func updateRiskLevel(_ riskLevel: RiskLevel) {
+        riskLabel.text = riskLevel.rawValue
+        
+        // Set color and progress based on risk level
+        switch riskLevel {
+        case .high:
+            riskLabel.textColor = AppTheme.errorColor
+            riskBar.progressTintColor = AppTheme.errorColor
+            riskBar.progress = 0.9
+        case .medium:
+            riskLabel.textColor = AppTheme.warningColor
+            riskBar.progressTintColor = AppTheme.warningColor
+            riskBar.progress = 0.6
+        case .low:
+            riskLabel.textColor = AppTheme.successColor
+            riskBar.progressTintColor = AppTheme.successColor
+            riskBar.progress = 0.3
+        case .unknown:
+            riskLabel.textColor = AppTheme.bodyTextColor
+            riskBar.progressTintColor = AppTheme.bodyTextColor
+            riskBar.progress = 0.1
+        }
+        
+        // Animate progress change
+        UIView.animate(withDuration: 0.5) {
+            self.layoutIfNeeded()
+        }
     }
     
-    func addActionButton(_ button: UIButton) {
-        actionStackView.addArrangedSubview(button)
+    func setLoading(_ isLoading: Bool) {
+        if isLoading {
+            activityIndicator.startAnimating()
+            riskLabel.text = "Hesaplanıyor..."
+            riskLabel.textColor = AppTheme.bodyTextColor
+        } else {
+            activityIndicator.stopAnimating()
+        }
     }
 }
