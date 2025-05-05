@@ -2,9 +2,9 @@ import UIKit
 import MapKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
+    
     var window: UIWindow?
-
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
@@ -14,15 +14,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Create window with the correct windowScene
         window = UIWindow(windowScene: windowScene)
         
-        // Check if user has seen onboarding
-        if UserDefaults.standard.bool(forKey: "hasSeenOnboarding") {
-            // User has seen onboarding, so go directly to main interface
-            setupMainInterface(in: windowScene)
-        } else {
-            // User hasn't seen onboarding, show splash screen first
-            let splashViewController = SplashViewController()
-            window?.rootViewController = splashViewController
-        }
+        // Her zaman SplashViewController ile başla
+        let splashViewController = SplashViewController()
+        window?.rootViewController = splashViewController
         
         // Make the window visible
         window?.makeKeyAndVisible()
@@ -67,7 +61,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let personalizedNavigationController = UINavigationController(rootViewController: personalizedViewController)
         personalizedNavigationController.tabBarItem = UITabBarItem(title: "Kişiselleştirilmiş", image: UIImage(systemName: "person.fill.viewfinder"), tag: 1)
         
-        // Create AI extensions view controller
+        // Mevcut tab bar'a yeni bir sekme eklemek
         let aiExtensionsViewController = AIExtensionsViewController()
         let aiNavigationController = UINavigationController(rootViewController: aiExtensionsViewController)
         aiNavigationController.tabBarItem = UITabBarItem(title: "AI Eklentileri", image: UIImage(systemName: "brain"), tag: 2)
@@ -80,14 +74,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         configureNavigationBarAppearance(for: personalizedNavigationController)
         configureNavigationBarAppearance(for: aiNavigationController)
         
-        // Set the tab bar controller as the root view controller using main thread
+        // Set the tab bar controller as the root view controller
         DispatchQueue.main.async {
-            self.window?.rootViewController = tabBarController
-            // Add transition animation
-            let transition = CATransition()
-            transition.type = .fade
-            transition.duration = 0.3
-            self.window?.layer.add(transition, forKey: nil)
+            UIView.transition(with: self.window!, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                self.window?.rootViewController = tabBarController
+            }, completion: nil)
         }
     }
     
