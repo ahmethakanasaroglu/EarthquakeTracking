@@ -7,9 +7,11 @@ class EarthquakeMapViewModel: ObservableObject {
     @Published var selectedEarthquake: Earthquake?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
+    @Published var minMagnitudeFilter: Double = 0.0
     
     private var cancellables = Set<AnyCancellable>()
     private let networkManager = NetworkManager()
+    private var allEarthquakes: [Earthquake] = []
     
     init() {
         setupBindings()
@@ -19,7 +21,8 @@ class EarthquakeMapViewModel: ObservableObject {
         networkManager.$earthquakes
             .receive(on: DispatchQueue.main)
             .sink { [weak self] earthquakes in
-                self?.earthquakes = earthquakes
+                self?.allEarthquakes = earthquakes
+                self?.applyFilters()
                 self?.isLoading = false
             }
             .store(in: &cancellables)
@@ -72,14 +75,48 @@ class EarthquakeMapViewModel: ObservableObject {
     func getColor(for earthquake: Earthquake) -> UIColor {
         let magnitude = getMagnitude(for: earthquake)
         
-        if magnitude >= 5.0 {
-            return .systemRed
+        if magnitude >= 6.0 {
+            return UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0) // Kırmızı
+        } else if magnitude >= 5.0 {
+            return UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0) // Koyu turuncu
         } else if magnitude >= 4.0 {
-            return .systemOrange
+            return UIColor(red: 0.9, green: 0.6, blue: 0.0, alpha: 1.0) // Turuncu
         } else if magnitude >= 3.0 {
-            return .systemYellow
+            return UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
+        } else if magnitude >= 2.0 {
+            return UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0) // Lime yeşil
         } else {
-            return .systemGreen
+            return UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0) // Yeşil
+        }
+    }
+    
+    func getMarkerScale(for earthquake: Earthquake) -> CGFloat {
+        let magnitude = getMagnitude(for: earthquake)
+        
+        if magnitude >= 6.0 {
+            return 1.4
+        } else if magnitude >= 5.0 {
+            return 1.2
+        } else if magnitude >= 4.0 {
+            return 1.1
+        } else if magnitude >= 3.0 {
+            return 1.0
+        } else if magnitude >= 2.0 {
+            return 0.9
+        } else {
+            return 0.8
+        }
+    }
+    
+    func getMarkerIcon(for earthquake: Earthquake) -> UIImage? {
+        let magnitude = getMagnitude(for: earthquake)
+        
+        if magnitude >= 5.0 {
+            return UIImage(systemName: "exclamationmark.triangle.fill")
+        } else if magnitude >= 4.0 {
+            return UIImage(systemName: "exclamationmark")
+        } else {
+            return UIImage(systemName: "waveform.path.ecg")
         }
     }
     
@@ -90,7 +127,7 @@ class EarthquakeMapViewModel: ObservableObject {
             return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         }
         
-        return CLLocationCoordinate2D(latitude: 39.0, longitude: 35.0)
+        return CLLocationCoordinate2D(latitude: 39.0, longitude: 35.0) // Türkiye'nin yaklaşık merkezi
     }
     
     func getInitialSpan() -> MKCoordinateSpan {
@@ -118,6 +155,18 @@ class EarthquakeMapViewModel: ObservableObject {
         
         return MKCoordinateSpan(latitudeDelta: max(5, latDelta), longitudeDelta: max(5, longDelta))
     }
+    
+    func filterByMagnitude(minMagnitude: Double) {
+        minMagnitudeFilter = minMagnitude
+        applyFilters()
+    }
+    
+    private func applyFilters() {
+        earthquakes = allEarthquakes.filter { earthquake in
+            let magnitude = getMagnitude(for: earthquake)
+            return magnitude >= minMagnitudeFilter
+        }
+    }
 }
 
 class EarthquakeAnnotation: NSObject, MKAnnotation {
@@ -130,7 +179,6 @@ class EarthquakeAnnotation: NSObject, MKAnnotation {
     }
     
     var subtitle: String? {
-
         let magnitude: String
         if let ml = Double(earthquake.ml), ml > 0 {
             magnitude = String(format: "%.1f", ml)
@@ -152,7 +200,6 @@ class EarthquakeAnnotation: NSObject, MKAnnotation {
     }
     
     func matchesEarthquake(_ earthquake: Earthquake) -> Bool {
-
         if let lat1 = Double(self.earthquake.latitude),
            let lon1 = Double(self.earthquake.longitude),
            let lat2 = Double(earthquake.latitude),

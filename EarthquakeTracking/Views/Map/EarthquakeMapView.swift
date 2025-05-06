@@ -125,49 +125,34 @@ class EarthquakeMapViewController: UIViewController {
         return button
     }()
     
-    private lazy var clusterSwitch: UISwitch = {
-        let switchControl = UISwitch()
-        switchControl.translatesAutoresizingMaskIntoConstraints = false
-        switchControl.onTintColor = AppTheme.primaryColor
-        switchControl.addTarget(self, action: #selector(toggleClustering), for: .valueChanged)
-        return switchControl
-    }()
-    
-    private lazy var clusterLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Depremleri Grupla"
-        label.font = UIFont.systemFont(ofSize: 12)
-        label.textColor = AppTheme.titleTextColor
-        return label
-    }()
-    
-    private lazy var clusterControlView: UIView = {
-        let view = UIView()
+    private lazy var legendView: EarthquakeMagnitudeLegendView = {
+        let view = EarthquakeMagnitudeLegendView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.9)
-        view.layer.cornerRadius = 16
-        view.layer.shadowColor = UIColor.black.cgColor
-        view.layer.shadowOpacity = 0.2
-        view.layer.shadowOffset = CGSize(width: 0, height: 2)
-        view.layer.shadowRadius = 4
-        
-        view.addSubview(clusterSwitch)
-        view.addSubview(clusterLabel)
-        
-        NSLayoutConstraint.activate([
-            clusterSwitch.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            clusterSwitch.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            
-            clusterLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            clusterLabel.leadingAnchor.constraint(equalTo: clusterSwitch.trailingAnchor, constant: 8),
-            clusterLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10)
-        ])
-        
+        view.layer.cornerRadius = 8
+        view.clipsToBounds = true
+        view.alpha = 0.9
         return view
     }()
     
-    private var isClusteringEnabled = false
+    private lazy var filterButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setImage(UIImage(systemName: "line.horizontal.3.decrease.circle.fill"), for: .normal)
+        button.tintColor = AppTheme.primaryColor
+        button.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.9)
+        button.layer.cornerRadius = 20
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.2
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        button.addTarget(self, action: #selector(showFilterOptions), for: .touchUpInside)
+        return button
+    }()
+    
+    // Popup'ın mevcut annotation konumuna göre pozisyonlaması için constraint'ler
+    private var popupBottomConstraint: NSLayoutConstraint?
+    private var popupCenterXConstraint: NSLayoutConstraint?
+    private var selectedAnnotationView: MKAnnotationView?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -181,18 +166,24 @@ class EarthquakeMapViewController: UIViewController {
         if viewModel.earthquakes.isEmpty {
             viewModel.fetchEarthquakes()
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.performFocusOnEarthquake(coordinate, earthquake: earthquake)
+            // Daha uzun bir bekleme süresi ekleyelim ve annotation'ların eklenmesinden emin olalım
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.performFocusOnEarthquake(coordinate, earthquake: earthquake)
             }
         } else {
-            performFocusOnEarthquake(coordinate, earthquake: earthquake)
+            // Burada da kısa bir gecikme ekleyelim, haritanın hazır olmasını beklemek için
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.performFocusOnEarthquake(coordinate, earthquake: earthquake)
+            }
         }
     }
-    
+
     private func performFocusOnEarthquake(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
+        // Bu işlevi de geliştirelim - önce bölgeyi ayarla
         let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
         mapView.setRegion(region, animated: true)
         
+        // Annotation'u bulmaya çalış
         var targetAnnotation: EarthquakeAnnotation? = nil
         
         for annotation in mapView.annotations {
@@ -205,14 +196,31 @@ class EarthquakeMapViewController: UIViewController {
             }
         }
         
+        // Eğer annotation bulunamazsa manuel olarak oluşturalım ve ekleyelim
+        if targetAnnotation == nil {
+            targetAnnotation = EarthquakeAnnotation(coordinate: coordinate, earthquake: earthquake)
+            mapView.addAnnotation(targetAnnotation!)
+        }
+        
+        // Annotation'u seçelim ve popup'ı gösterelim
         if let annotation = targetAnnotation {
             resetAllAnnotations()
             
-            mapView.selectAnnotation(annotation, animated: true)
-            viewModel.selectedEarthquake = annotation.earthquake
+            // viewModel'deki selectedEarthquake değerini güncelle
+            viewModel.selectedEarthquake = earthquake
+            annotation.isSelected = true
             
-            if let annotationView = mapView.view(for: annotation) {
-                highlightAnnotationView(annotationView)
+            // Annotation view'ı al veya bekle ve sonra highlight et
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                if let annotationView = self?.mapView.view(for: annotation) {
+                    self?.highlightAnnotationView(annotationView)
+                    self?.selectedAnnotationView = annotationView
+                    
+                    // Popup'ı göster
+                    if let earthquake = self?.viewModel.selectedEarthquake {
+                        self?.updatePopupView(with: earthquake)
+                    }
+                }
             }
         }
     }
@@ -261,7 +269,21 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     @objc private func handleMapTap(_ gestureRecognizer: UITapGestureRecognizer) {
-        if !popupView.isHidden {
+        // Boş bir alana dokunulduğunda popup'ı kapat
+        let touchPoint = gestureRecognizer.location(in: mapView)
+        let touchCoordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
+        
+        // Dokunulan noktada bir annotation var mı kontrol et
+        let touchedAnnotations = mapView.annotations.filter { annotation in
+            guard let annotationView = mapView.view(for: annotation) else { return false }
+            let annotationPoint = mapView.convert(annotation.coordinate, toPointTo: mapView)
+            // 30 piksel çapında bir alan içinde dokunuş olup olmadığını kontrol et
+            let distance = sqrt(pow(touchPoint.x - annotationPoint.x, 2) + pow(touchPoint.y - annotationPoint.y, 2))
+            return distance < 30 // 30 piksel yarıçaplı bir alanda dokunuş varsa
+        }
+        
+        // Eğer bir annotation'a dokunulmadıysa ve popup açıksa kapat
+        if touchedAnnotations.isEmpty && !popupView.isHidden {
             closePopup()
         }
     }
@@ -274,7 +296,8 @@ class EarthquakeMapViewController: UIViewController {
         view.addSubview(activityIndicator)
         view.addSubview(popupView)
         view.addSubview(mapTypeButton)
-        view.addSubview(clusterControlView)
+        view.addSubview(legendView)
+        view.addSubview(filterButton)
         
         popupView.addSubview(closeButton)
         popupView.addSubview(magnitudeCircleView)
@@ -299,13 +322,28 @@ class EarthquakeMapViewController: UIViewController {
             mapTypeButton.widthAnchor.constraint(equalToConstant: 40),
             mapTypeButton.heightAnchor.constraint(equalToConstant: 40),
             
-            clusterControlView.topAnchor.constraint(equalTo: mapTypeButton.bottomAnchor, constant: 16),
-            clusterControlView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            clusterControlView.heightAnchor.constraint(equalToConstant: 40),
+            legendView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            legendView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            legendView.widthAnchor.constraint(equalToConstant: 160),
             
+            filterButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            filterButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            filterButton.widthAnchor.constraint(equalToConstant: 40),
+            filterButton.heightAnchor.constraint(equalToConstant: 40),
+        ])
+        
+        // Popup view constraint'leri - bunları dinamik olarak ayarlayacağız
+        popupView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(popupView)
+        
+        // Başlangıçta legendView'ın üzerine ve ekranın ortasına yerleştir
+        popupBottomConstraint = popupView.bottomAnchor.constraint(equalTo: legendView.topAnchor, constant: -16)
+        popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        
+        NSLayoutConstraint.activate([
             popupView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             popupView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            popupView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            popupBottomConstraint!,
             
             closeButton.topAnchor.constraint(equalTo: popupView.topAnchor, constant: 12),
             closeButton.trailingAnchor.constraint(equalTo: popupView.trailingAnchor, constant: -12),
@@ -350,6 +388,7 @@ class EarthquakeMapViewController: UIViewController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] earthquakes in
                 self?.updateMapAnnotations()
+                self?.closePopup() // Harita yenilendiğinde popup'ı kapat
             }
             .store(in: &cancellables)
         
@@ -386,12 +425,15 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func updateMapAnnotations() {
+        // Kullanıcı konumu dışında tüm annotation'ları kaldır
         let existingAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
         mapView.removeAnnotations(existingAnnotations)
         
+        // Yeni annotation'ları ekle
         let annotations = viewModel.getAnnotations()
         mapView.addAnnotations(annotations)
         
+        // Haritayı uygun bölgeye odakla
         if let centerCoordinate = viewModel.getCenterCoordinate() {
             let span = viewModel.getInitialSpan()
             let region = MKCoordinateRegion(center: centerCoordinate, span: span)
@@ -420,15 +462,69 @@ class EarthquakeMapViewController: UIViewController {
         }
         
         magnitudeLabel.text = magnitude
-        magnitudeCircleView.backgroundColor = AppTheme.magnitudeColor(for: magValue)
+        magnitudeCircleView.backgroundColor = viewModel.getColor(for: earthquake)
         
         depthInfoView.setValue("\(earthquake.depth_km) km")
         
         coordinatesInfoView.setValue("\(earthquake.latitude.prefix(6)), \(earthquake.longitude.prefix(6))")
         
+        // Seçili annotation'a göre popup'ı konumlandır
+        if let selectedView = selectedAnnotationView {
+            positionPopupRelativeToAnnotation(selectedView)
+        }
+        
+        showPopupWithAnimation()
+    }
+    
+    private func positionPopupRelativeToAnnotation(_ annotationView: MKAnnotationView) {
+        // Popup'ı annotation'ın üzerinde gösterme
+        let annotationPoint = mapView.convert(annotationView.annotation!.coordinate, toPointTo: view)
+        
+        // Annotation view'ın boyutunu hesaba katarak popup'ı annotation'ın üstüne yerleştir
+        let annotationHeight = annotationView.frame.height * annotationView.transform.a // transform.a = scaleX
+        
+        // Popup'ın alt kenarını annotation'ın tepesine yerleştir
+        popupBottomConstraint?.isActive = false
+        popupBottomConstraint = popupView.bottomAnchor.constraint(equalTo: view.topAnchor, constant: annotationPoint.y - annotationHeight)
+        popupBottomConstraint?.isActive = true
+        
+        // Ekranın sol ve sağ kenarlarına göre pozisyonu ayarla
+        // Eğer annotation ekranın sol tarafındaysa, popup'ı sağa kaydır
+        // Eğer annotation ekranın sağ tarafındaysa, popup'ı sola kaydır
+        popupCenterXConstraint?.isActive = false
+        
+        let screenWidth = view.frame.width
+        let screenCenter = screenWidth / 2
+        
+        if annotationPoint.x < screenCenter - 50 {
+            // Annotation sol tarafta, popup'ı sağa kaydır
+            popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50)
+        } else if annotationPoint.x > screenCenter + 50 {
+            // Annotation sağ tarafta, popup'ı sola kaydır
+            popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -50)
+        } else {
+            // Annotation ortada, popup'ı ortada göster
+            popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        }
+        
+        popupCenterXConstraint?.isActive = true
+        
+        // Popup'ın legendView ile çakışmamasını sağla
+        let legendViewTop = legendView.frame.minY
+        let estimatedPopupHeight = 200 // Popup'ın tahmini yüksekliği
+        
+        if let constraint = popupBottomConstraint, constraint.constant + CGFloat(estimatedPopupHeight) > legendViewTop {
+            // Popup legendView ile çakışacak, pozisyonu ayarla
+            popupBottomConstraint?.constant = legendViewTop - CGFloat(estimatedPopupHeight) - 20
+        }
+        
+        view.layoutIfNeeded()
+    }
+    
+    private func showPopupWithAnimation() {
         popupView.isHidden = false
         popupView.alpha = 0
-        popupView.transform = CGAffineTransform(rotationAngle: 50)
+        popupView.transform = CGAffineTransform(rotationAngle: 30)
         
         UIView.animate(withDuration: 0.3) {
             self.popupView.alpha = 1.0
@@ -437,15 +533,20 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     @objc private func refreshData() {
+        closePopup() // Yenilemeden önce popup'ı kapat
         fetchEarthquakes()
     }
     
     @objc private func closePopup() {
         UIView.animate(withDuration: 0.3) {
             self.popupView.alpha = 0.0
-            self.popupView.transform = CGAffineTransform(rotationAngle: 50)
+            self.popupView.transform = CGAffineTransform(rotationAngle: 30)
         } completion: { _ in
             self.popupView.isHidden = true
+            // Seçili annotation'ı sıfırla
+            self.viewModel.selectedEarthquake = nil
+            self.selectedAnnotationView = nil
+            self.resetAllAnnotations()
         }
     }
     
@@ -479,9 +580,56 @@ class EarthquakeMapViewController: UIViewController {
         present(actionSheet, animated: true)
     }
     
-    @objc private func toggleClustering(_ sender: UISwitch) {
-        isClusteringEnabled = sender.isOn
-        updateMapAnnotations()
+    @objc private func showFilterOptions() {
+        let alertController = UIAlertController(title: "Deprem Filtresi", message: "Gösterilecek depremleri filtreleyin", preferredStyle: .actionSheet)
+        
+        let allAction = UIAlertAction(title: "Tümü", style: .default) { [weak self] _ in
+            self?.viewModel.filterByMagnitude(minMagnitude: 0.0)
+            self?.closePopup()
+        }
+        
+        let magnitude2Action = UIAlertAction(title: "Büyüklük >= 2.0", style: .default) { [weak self] _ in
+            self?.viewModel.filterByMagnitude(minMagnitude: 2.0)
+            self?.closePopup()
+        }
+        
+        let magnitude3Action = UIAlertAction(title: "Büyüklük >= 3.0", style: .default) { [weak self] _ in
+            self?.viewModel.filterByMagnitude(minMagnitude: 3.0)
+            self?.closePopup()
+        }
+        
+        let magnitude4Action = UIAlertAction(title: "Büyüklük >= 4.0", style: .default) { [weak self] _ in
+            self?.viewModel.filterByMagnitude(minMagnitude: 4.0)
+            self?.closePopup()
+        }
+        
+        let magnitude5Action = UIAlertAction(title: "Büyüklük >= 5.0", style: .default) { [weak self] _ in
+            self?.viewModel.filterByMagnitude(minMagnitude: 5.0)
+            self?.closePopup()
+        }
+        
+        let cancelAction = UIAlertAction(title: "İptal", style: .cancel)
+        
+        // Add icons to the actions
+        allAction.setValue(UIImage(systemName: "list.bullet"), forKey: "image")
+        magnitude2Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
+        magnitude3Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
+        magnitude4Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
+        magnitude5Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
+        
+        alertController.addAction(allAction)
+        alertController.addAction(magnitude2Action)
+        alertController.addAction(magnitude3Action)
+        alertController.addAction(magnitude4Action)
+        alertController.addAction(magnitude5Action)
+        alertController.addAction(cancelAction)
+        
+        if let popoverController = alertController.popoverPresentationController {
+            popoverController.sourceView = filterButton
+            popoverController.sourceRect = filterButton.bounds
+        }
+        
+        present(alertController, animated: true)
     }
     
     @objc private func showDetails() {
@@ -502,51 +650,95 @@ class EarthquakeMapViewController: UIViewController {
 // MARK: - MKMapViewDelegate
 extension EarthquakeMapViewController: MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        guard let annotation = annotation as? EarthquakeAnnotation else {
+        // Kullanıcı konumu için varsayılan görünümü kullan
+        if annotation is MKUserLocation {
             return nil
         }
         
-        let identifier = "EarthquakeAnnotation"
-        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
-        
-        if annotationView == nil {
-            annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
-            annotationView?.canShowCallout = false
+        // Deprem annotation'ı için özel görünüm oluştur
+        if let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
+            let identifier = "EarthquakeAnnotation"
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
             
-            annotationView?.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
-            UIView.animate(withDuration: 0.3) {
-                annotationView?.transform = CGAffineTransform.identity
+            if annotationView == nil {
+                annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView?.canShowCallout = false
+                
+                // Yeni eklenen annotation'a animasyon uygula
+                annotationView?.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
+                UIView.animate(withDuration: 0.3) {
+                    annotationView?.transform = CGAffineTransform.identity
+                }
+            } else {
+                annotationView?.annotation = annotation
             }
-        } else {
-            annotationView?.annotation = annotation
+            
+            // Büyüklüğe göre renk ve boyut ayarla
+            let magnitude = viewModel.getMagnitude(for: earthquakeAnnotation.earthquake)
+            annotationView?.markerTintColor = viewModel.getColor(for: earthquakeAnnotation.earthquake)
+            
+            // Magnitude bazlı ölçeklendirme
+            let scale = viewModel.getMarkerScale(for: earthquakeAnnotation.earthquake)
+            annotationView?.transform = CGAffineTransform(scaleX: scale, y: scale)
+            
+            // Büyüklüğe göre ikon belirleme
+            if magnitude >= 5.0 {
+                annotationView?.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
+            } else if magnitude >= 4.0 {
+                annotationView?.glyphImage = UIImage(systemName: "exclamationmark")
+            } else {
+                annotationView?.glyphImage = UIImage(systemName: "waveform.path.ecg")
+                annotationView?.glyphTintColor = .white
+            }
+            
+            if earthquakeAnnotation.isSelected {
+                highlightAnnotationView(annotationView!)
+            }
+            
+            return annotationView
         }
         
-        let magnitude = viewModel.getMagnitude(for: annotation.earthquake)
-        annotationView?.markerTintColor = AppTheme.magnitudeColor(for: magnitude)
-        
-        if magnitude >= 5.0 {
-            annotationView?.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
-        } else if magnitude >= 4.0 {
-            annotationView?.glyphImage = UIImage(systemName: "exclamationmark")
-        } else {
-            annotationView?.glyphImage = nil
-            annotationView?.glyphText = String(format: "%.1f", magnitude)
-        }
-        
-        if annotation.isSelected {
-            highlightAnnotationView(annotationView!)
-        }
-        
-        return annotationView
+        return nil
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+        // MapKit tarafından bir annotation seçildiğinde, bizim özel tıklama davranışımızı kullan
         if let annotation = view.annotation as? EarthquakeAnnotation {
-            resetAllAnnotations()
-            annotation.isSelected = true
-            highlightAnnotationView(view)
-            viewModel.selectEarthquake(annotation)
-            mapView.setCenter(annotation.coordinate, animated: true)
+            // Seçili annotation'ı resetle
+            mapView.deselectAnnotation(annotation, animated: false)
+            
+            // Zaten seçili mi kontrol et
+            let isAlreadySelected = (viewModel.selectedEarthquake != nil &&
+                                     annotation.matchesEarthquake(viewModel.selectedEarthquake!))
+            
+            if isAlreadySelected && !popupView.isHidden {
+                // Aynı annotation'a tekrar tıklandıysa popup'ı kapat
+                closePopup()
+            } else {
+                // Yeni bir annotation'a tıklandıysa veya popup kapalıysa, vurgula ve popup'ı göster
+                resetAllAnnotations()
+                annotation.isSelected = true
+                highlightAnnotationView(view)
+                selectedAnnotationView = view
+                viewModel.selectEarthquake(annotation)
+            }
+        }
+    }
+    
+    // Haritada region değiştiğinde çağrılır - ek bilgi olarak
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        // Harita bölgesi değiştiğinde tüm annotation'ların doğru boyut ve konumda olmasını sağla
+        for annotation in mapView.annotations {
+            if let view = mapView.view(for: annotation) as? MKMarkerAnnotationView,
+               let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
+                
+                if earthquakeAnnotation.isSelected {
+                    highlightAnnotationView(view)
+                } else {
+                    let scale = viewModel.getMarkerScale(for: earthquakeAnnotation.earthquake)
+                    view.transform = CGAffineTransform(scaleX: scale, y: scale)
+                }
+            }
         }
     }
 }
@@ -554,6 +746,12 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
 // MARK: - UIGestureRecognizerDelegate
 extension EarthquakeMapViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        // PopupView veya içindeki herhangi bir elemana dokunulduğunda tap gesture'ı engelle
+        if let touchView = touch.view, touchView == popupView || touchView.isDescendant(of: popupView) {
+            return false
+        }
+        
+        // MapView dışında bir yere dokunulduğunda tap gesture'ı engelle
         return touch.view == mapView
     }
 }
@@ -575,7 +773,6 @@ class InfoRowView: UIView {
     }
     
     private func setupView(iconName: String, title: String) {
-
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.image = UIImage(systemName: iconName)
@@ -612,5 +809,95 @@ class InfoRowView: UIView {
     
     func setValue(_ value: String) {
         valueLabel.text = value
+    }
+}
+
+// MARK: - EarthquakeMagnitudeLegendView
+class EarthquakeMagnitudeLegendView: UIView {
+    
+    private let titleLabel = UILabel()
+    private let stackView = UIStackView()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupUI() {
+        backgroundColor = UIColor.white.withAlphaComponent(0.9)
+        
+        // Title Label
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Deprem Büyüklüğü"
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
+        titleLabel.textColor = AppTheme.titleTextColor
+        
+        // Stack View
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.spacing = 4
+        stackView.alignment = .fill
+        stackView.distribution = .fillEqually
+        
+        // Add subviews
+        addSubview(titleLabel)
+        addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            
+            stackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
+        ])
+        
+        // Add magnitude levels to stack view
+        addMagnitudeLevel(color: UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0), text: "< 2.0")
+        addMagnitudeLevel(color: UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0), text: "2.0 - 2.9")
+        addMagnitudeLevel(color: UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0), text: "3.0 - 3.9")
+        addMagnitudeLevel(color: UIColor(red: 0.9, green: 0.6, blue: 0.0, alpha: 1.0), text: "4.0 - 4.9")
+        addMagnitudeLevel(color: UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0), text: "5.0 - 5.9")
+        addMagnitudeLevel(color: UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0), text: "≥ 6.0")
+    }
+    
+    private func addMagnitudeLevel(color: UIColor, text: String) {
+        let rowView = UIView()
+        rowView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let colorView = UIView()
+        colorView.translatesAutoresizingMaskIntoConstraints = false
+        colorView.backgroundColor = color
+        colorView.layer.cornerRadius = 6
+        
+        let textLabel = UILabel()
+        textLabel.translatesAutoresizingMaskIntoConstraints = false
+        textLabel.text = text
+        textLabel.font = UIFont.systemFont(ofSize: 12)
+        textLabel.textColor = AppTheme.bodyTextColor
+        
+        rowView.addSubview(colorView)
+        rowView.addSubview(textLabel)
+        
+        NSLayoutConstraint.activate([
+            colorView.leadingAnchor.constraint(equalTo: rowView.leadingAnchor),
+            colorView.centerYAnchor.constraint(equalTo: rowView.centerYAnchor),
+            colorView.widthAnchor.constraint(equalToConstant: 12),
+            colorView.heightAnchor.constraint(equalToConstant: 12),
+            
+            textLabel.leadingAnchor.constraint(equalTo: colorView.trailingAnchor, constant: 8),
+            textLabel.centerYAnchor.constraint(equalTo: rowView.centerYAnchor),
+            textLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor),
+            
+            rowView.heightAnchor.constraint(equalToConstant: 16)
+        ])
+        
+        stackView.addArrangedSubview(rowView)
     }
 }
