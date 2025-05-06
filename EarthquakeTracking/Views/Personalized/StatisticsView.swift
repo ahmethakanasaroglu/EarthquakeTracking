@@ -4,7 +4,6 @@ import Combine
 class StatisticsViewController: UIViewController {
     
     // MARK: - Properties
-    private let viewModel: PersonalizedViewModel
     private var earthquakeViewModel = EarthquakeListViewModel()
     private var cancellables = Set<AnyCancellable>()
     
@@ -14,6 +13,9 @@ class StatisticsViewController: UIViewController {
     private let headerView = UIView()
     private let headerLabel = UILabel()
     private let headerDescriptionLabel = UILabel()
+    
+    private let summaryView = UIView()
+    private let summaryStatsStackView = UIStackView()
     
     private let regionChartContainerView = UIView()
     private let regionChartTitleLabel = UILabel()
@@ -33,15 +35,22 @@ class StatisticsViewController: UIViewController {
     
     private let activityIndicator = UIActivityIndicatorView(style: .large)
     
+    // MARK: - Data Properties
     private var regionCountData: [(region: String, count: Int)] = []
     private var magnitudeDistributionData: [(range: String, count: Int)] = []
     private var depthDistributionData: [(range: String, count: Int)] = []
     private var timelineData: [(date: String, count: Int)] = []
     
+    private var totalEarthquakes: Int = 0
+    private var averageMagnitude: Double = 0
+    private var maxMagnitude: Double = 0
+    private var averageDepth: Double = 0
+    private var mostActiveRegion: String = ""
+    
     // MARK: - Initialization
     init(viewModel: PersonalizedViewModel) {
-        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
+        // Bu constructor viewModel'i kullanmıyor, sadece uyumluluk için burada
     }
     
     required init?(coder: NSCoder) {
@@ -61,11 +70,9 @@ class StatisticsViewController: UIViewController {
         title = "Deprem İstatistikleri"
         view.backgroundColor = AppTheme.backgroundColor
         
-        // ScrollView setup
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
         
-        // Header setup
         headerView.translatesAutoresizingMaskIntoConstraints = false
         headerView.backgroundColor = AppTheme.primaryColor
         headerView.layer.cornerRadius = 16
@@ -81,7 +88,14 @@ class StatisticsViewController: UIViewController {
         headerDescriptionLabel.textColor = .white.withAlphaComponent(0.9)
         headerDescriptionLabel.numberOfLines = 0
         
-        // Chart containers setup
+        summaryView.translatesAutoresizingMaskIntoConstraints = false
+        AppTheme.applyCardStyle(to: summaryView)
+        
+        summaryStatsStackView.translatesAutoresizingMaskIntoConstraints = false
+        summaryStatsStackView.axis = .horizontal
+        summaryStatsStackView.distribution = .fillEqually
+        summaryStatsStackView.spacing = 10
+        
         regionChartContainerView.translatesAutoresizingMaskIntoConstraints = false
         AppTheme.applyCardStyle(to: regionChartContainerView)
         
@@ -126,19 +140,20 @@ class StatisticsViewController: UIViewController {
         timelineChartView.translatesAutoresizingMaskIntoConstraints = false
         timelineChartView.backgroundColor = .white
         
-        // Activity Indicator
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.color = AppTheme.primaryColor
         activityIndicator.hidesWhenStopped = true
         activityIndicator.startAnimating()
         
-        // Add views to hierarchy
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
         
         contentView.addSubview(headerView)
         headerView.addSubview(headerLabel)
         headerView.addSubview(headerDescriptionLabel)
+        
+        contentView.addSubview(summaryView)
+        summaryView.addSubview(summaryStatsStackView)
         
         contentView.addSubview(regionChartContainerView)
         regionChartContainerView.addSubview(regionChartTitleLabel)
@@ -158,7 +173,6 @@ class StatisticsViewController: UIViewController {
         
         view.addSubview(activityIndicator)
         
-        // Setup constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -184,7 +198,16 @@ class StatisticsViewController: UIViewController {
             headerDescriptionLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
             headerDescriptionLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -16),
             
-            regionChartContainerView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 16),
+            summaryView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 16),
+            summaryView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            summaryView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            
+            summaryStatsStackView.topAnchor.constraint(equalTo: summaryView.topAnchor, constant: 16),
+            summaryStatsStackView.leadingAnchor.constraint(equalTo: summaryView.leadingAnchor, constant: 16),
+            summaryStatsStackView.trailingAnchor.constraint(equalTo: summaryView.trailingAnchor, constant: -16),
+            summaryStatsStackView.bottomAnchor.constraint(equalTo: summaryView.bottomAnchor, constant: -16),
+            
+            regionChartContainerView.topAnchor.constraint(equalTo: summaryView.bottomAnchor, constant: 16),
             regionChartContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             regionChartContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             regionChartContainerView.heightAnchor.constraint(equalToConstant: 350),
@@ -252,6 +275,7 @@ class StatisticsViewController: UIViewController {
             .sink { [weak self] earthquakes in
                 guard let self = self, !earthquakes.isEmpty else { return }
                 self.processEarthquakeData(earthquakes)
+                self.createSummaryStats()
                 self.createCharts()
                 self.activityIndicator.stopAnimating()
             }
@@ -283,37 +307,50 @@ class StatisticsViewController: UIViewController {
     
     // MARK: - Data Processing
     private func processEarthquakeData(_ earthquakes: [Earthquake]) {
-        // Process region data (extract city/region from location)
+
+        totalEarthquakes = earthquakes.count
         var regionCounts: [String: Int] = [:]
         var magnitudeCounts: [String: Int] = [:]
         var depthCounts: [String: Int] = [:]
         var dateCounts: [String: Int] = [:]
+        var totalMagnitude: Double = 0
+        var totalDepth: Double = 0
         
         for earthquake in earthquakes {
-            // Extract region (first part of location string)
+
             let locationComponents = earthquake.location.components(separatedBy: "-")
             let region = locationComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Diğer"
             regionCounts[region, default: 0] += 1
             
-            // Process magnitude data
             let magnitude = getMagnitude(for: earthquake)
+            totalMagnitude += magnitude
+            maxMagnitude = max(maxMagnitude, magnitude)
+            
             let magnitudeRange = getMagnitudeRange(for: magnitude)
             magnitudeCounts[magnitudeRange, default: 0] += 1
             
-            // Process depth data
             let depth = Double(earthquake.depth_km) ?? 0
+            totalDepth += depth
+            
             let depthRange = getDepthRange(for: depth)
             depthCounts[depthRange, default: 0] += 1
             
-            // Process date for timeline
             let date = earthquake.date
             dateCounts[date, default: 0] += 1
         }
         
-        // Convert dictionaries to arrays and sort
+        if totalEarthquakes > 0 {
+            averageMagnitude = totalMagnitude / Double(totalEarthquakes)
+            averageDepth = totalDepth / Double(totalEarthquakes)
+        }
+        
+        if let topRegion = regionCounts.max(by: { $0.value < $1.value }) {
+            mostActiveRegion = topRegion.key
+        }
+        
         regionCountData = regionCounts
             .sorted(by: { $0.value > $1.value })
-            .prefix(10) 
+            .prefix(10)
             .map { ($0.key, $0.value) }
         
         let magnitudeRanges = ["0-1.9", "2-2.9", "3-3.9", "4-4.9", "5-5.9", "6+"]
@@ -326,7 +363,6 @@ class StatisticsViewController: UIViewController {
             (range, depthCounts[range] ?? 0)
         }
         
-        // Sort dates chronologically
         timelineData = dateCounts.map { ($0.key, $0.value) }
             .sorted(by: { date1, date2 in
                 let formatter = DateFormatter()
@@ -382,6 +418,63 @@ class StatisticsViewController: UIViewController {
         }
     }
     
+    // MARK: - Summary Statistics
+    private func createSummaryStats() {
+
+        summaryStatsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        let totalQuakesView = createStatView(title: "Toplam Deprem", value: "\(totalEarthquakes)")
+        let avgMagnitudeView = createStatView(title: "Ortalama Büyüklük", value: String(format: "%.1f", averageMagnitude))
+        let maxMagnitudeView = createStatView(title: "En Büyük Deprem", value: String(format: "%.1f", maxMagnitude))
+        let avgDepthView = createStatView(title: "Ortalama Derinlik", value: String(format: "%.1f", averageDepth))
+        let activeRegionView = createStatView(title: "En Aktif Bölge", value: mostActiveRegion)
+        
+        summaryStatsStackView.addArrangedSubview(totalQuakesView)
+        summaryStatsStackView.addArrangedSubview(avgMagnitudeView)
+        summaryStatsStackView.addArrangedSubview(maxMagnitudeView)
+        summaryStatsStackView.addArrangedSubview(avgDepthView)
+        summaryStatsStackView.addArrangedSubview(activeRegionView)
+    }
+    
+    private func createStatView(title: String, value: String) -> UIView {
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let stackView = UIStackView()
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        stackView.spacing = 4
+        
+        let valueLabel = UILabel()
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+        valueLabel.text = value
+        valueLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        valueLabel.textColor = AppTheme.primaryColor
+        valueLabel.textAlignment = .center
+        
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.font = UIFont.systemFont(ofSize: 12)
+        titleLabel.textColor = AppTheme.bodyTextColor
+        titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 2
+        
+        stackView.addArrangedSubview(valueLabel)
+        stackView.addArrangedSubview(titleLabel)
+        containerView.addSubview(stackView)
+        
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            stackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            stackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        return containerView
+    }
+    
     // MARK: - Chart Creation
     private func createCharts() {
         createRegionBarChart()
@@ -391,37 +484,24 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createRegionBarChart() {
-        // Templ grafikler için hazırlık, gerçek grafikler Charts kütüphanesi ile yapılacak
-        let chartView = UIView()
-        chartView.translatesAutoresizingMaskIntoConstraints = false
-        chartView.backgroundColor = .white
+
+        regionChartView.subviews.forEach { $0.removeFromSuperview() }
         
-        regionChartView.addSubview(chartView)
-        
-        NSLayoutConstraint.activate([
-            chartView.topAnchor.constraint(equalTo: regionChartView.topAnchor),
-            chartView.leadingAnchor.constraint(equalTo: regionChartView.leadingAnchor),
-            chartView.trailingAnchor.constraint(equalTo: regionChartView.trailingAnchor),
-            chartView.bottomAnchor.constraint(equalTo: regionChartView.bottomAnchor)
-        ])
-        
-        // Basit bölgesel dağılım gösterimi
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.spacing = 8
         stackView.distribution = .fillEqually
         
-        chartView.addSubview(stackView)
+        regionChartView.addSubview(stackView)
         
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: chartView.topAnchor, constant: 8),
-            stackView.leadingAnchor.constraint(equalTo: chartView.leadingAnchor, constant: 8),
-            stackView.trailingAnchor.constraint(equalTo: chartView.trailingAnchor, constant: -8),
-            stackView.bottomAnchor.constraint(equalTo: chartView.bottomAnchor, constant: -8)
+            stackView.topAnchor.constraint(equalTo: regionChartView.topAnchor, constant: 8),
+            stackView.leadingAnchor.constraint(equalTo: regionChartView.leadingAnchor, constant: 8),
+            stackView.trailingAnchor.constraint(equalTo: regionChartView.trailingAnchor, constant: -8),
+            stackView.bottomAnchor.constraint(equalTo: regionChartView.bottomAnchor, constant: -8)
         ])
         
-        // Bölgeler için basit gösterim
         for (index, data) in regionCountData.prefix(7).enumerated() {
             let barView = createBarView(title: data.region, value: data.count, maxValue: regionCountData.first?.count ?? 100, color: AppTheme.primaryColor)
             stackView.addArrangedSubview(barView)
@@ -429,37 +509,24 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createMagnitudePieChart() {
-        // Temsili pasta grafiği
-        let chartView = UIView()
-        chartView.translatesAutoresizingMaskIntoConstraints = false
-        chartView.backgroundColor = .white
+
+        magnitudeChartView.subviews.forEach { $0.removeFromSuperview() }
         
-        magnitudeChartView.addSubview(chartView)
-        
-        NSLayoutConstraint.activate([
-            chartView.topAnchor.constraint(equalTo: magnitudeChartView.topAnchor),
-            chartView.leadingAnchor.constraint(equalTo: magnitudeChartView.leadingAnchor),
-            chartView.trailingAnchor.constraint(equalTo: magnitudeChartView.trailingAnchor),
-            chartView.bottomAnchor.constraint(equalTo: magnitudeChartView.bottomAnchor)
-        ])
-        
-        // Basit büyüklük dağılımı gösterimi
         let legendStackView = UIStackView()
         legendStackView.translatesAutoresizingMaskIntoConstraints = false
         legendStackView.axis = .vertical
         legendStackView.spacing = 8
         legendStackView.distribution = .fillEqually
         
-        chartView.addSubview(legendStackView)
+        magnitudeChartView.addSubview(legendStackView)
         
         NSLayoutConstraint.activate([
-            legendStackView.centerYAnchor.constraint(equalTo: chartView.centerYAnchor),
-            legendStackView.leadingAnchor.constraint(equalTo: chartView.leadingAnchor, constant: 16),
-            legendStackView.trailingAnchor.constraint(equalTo: chartView.trailingAnchor, constant: -16),
+            legendStackView.centerYAnchor.constraint(equalTo: magnitudeChartView.centerYAnchor),
+            legendStackView.leadingAnchor.constraint(equalTo: magnitudeChartView.leadingAnchor, constant: 16),
+            legendStackView.trailingAnchor.constraint(equalTo: magnitudeChartView.trailingAnchor, constant: -16),
             legendStackView.heightAnchor.constraint(equalToConstant: 200)
         ])
         
-        // Büyüklük aralıkları için renk gösterimi
         let colors = [
             UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0), // 0-1.9: Yeşil
             UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0), // 2-2.9: Lime yeşil
@@ -475,40 +542,64 @@ class StatisticsViewController: UIViewController {
                 legendStackView.addArrangedSubview(colorLegendView)
             }
         }
+        
+        let pieView = UIView()
+        pieView.translatesAutoresizingMaskIntoConstraints = false
+        magnitudeChartView.addSubview(pieView)
+        
+        NSLayoutConstraint.activate([
+            pieView.topAnchor.constraint(equalTo: magnitudeChartView.topAnchor, constant: 16),
+            pieView.leadingAnchor.constraint(equalTo: magnitudeChartView.leadingAnchor, constant: 16),
+            pieView.heightAnchor.constraint(equalToConstant: 44),
+            pieView.widthAnchor.constraint(equalToConstant: magnitudeChartView.bounds.width - 32)
+        ])
+        
+        let totalCount = magnitudeDistributionData.reduce(0) { $0 + $1.count }
+        var currentX: CGFloat = 0
+        
+        for (index, data) in magnitudeDistributionData.enumerated() {
+            if index < colors.count && totalCount > 0 {
+                let ratio = CGFloat(data.count) / CGFloat(totalCount)
+                let width = ratio * (magnitudeChartView.bounds.width - 32)
+                
+                let segmentView = UIView(frame: CGRect(x: currentX, y: 0, width: width, height: 44))
+                segmentView.backgroundColor = colors[index]
+                
+                if index == 0 {
+
+                    segmentView.layer.cornerRadius = 8
+                    segmentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
+                } else if index == colors.count - 1 || index == magnitudeDistributionData.count - 1 {
+
+                    segmentView.layer.cornerRadius = 8
+                    segmentView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
+                }
+                
+                pieView.addSubview(segmentView)
+                currentX += width
+            }
+        }
     }
     
     private func createDepthBarChart() {
-        // Temsili derinlik dağılımı
-        let chartView = UIView()
-        chartView.translatesAutoresizingMaskIntoConstraints = false
-        chartView.backgroundColor = .white
+
+        depthChartView.subviews.forEach { $0.removeFromSuperview() }
         
-        depthChartView.addSubview(chartView)
-        
-        NSLayoutConstraint.activate([
-            chartView.topAnchor.constraint(equalTo: depthChartView.topAnchor),
-            chartView.leadingAnchor.constraint(equalTo: depthChartView.leadingAnchor),
-            chartView.trailingAnchor.constraint(equalTo: depthChartView.trailingAnchor),
-            chartView.bottomAnchor.constraint(equalTo: depthChartView.bottomAnchor)
-        ])
-        
-        // Basit derinlik dağılımı gösterimi
         let stackView = UIStackView()
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.spacing = 16
         stackView.distribution = .fillEqually
         
-        chartView.addSubview(stackView)
+        depthChartView.addSubview(stackView)
         
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: chartView.topAnchor, constant: 16),
-            stackView.leadingAnchor.constraint(equalTo: chartView.leadingAnchor, constant: 16),
-            stackView.trailingAnchor.constraint(equalTo: chartView.trailingAnchor, constant: -16),
-            stackView.bottomAnchor.constraint(equalTo: chartView.bottomAnchor, constant: -16)
+            stackView.topAnchor.constraint(equalTo: depthChartView.topAnchor, constant: 16),
+            stackView.leadingAnchor.constraint(equalTo: depthChartView.leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: depthChartView.trailingAnchor, constant: -16),
+            stackView.bottomAnchor.constraint(equalTo: depthChartView.bottomAnchor, constant: -16)
         ])
         
-        // Derinlik aralıkları için barlar
         let maxDepthCount = depthDistributionData.map { $0.count }.max() ?? 100
         
         for data in depthDistributionData {
@@ -518,37 +609,24 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createTimelineChart() {
-        // Temsili zaman çizelgesi
-        let chartView = UIView()
-        chartView.translatesAutoresizingMaskIntoConstraints = false
-        chartView.backgroundColor = .white
+
+        timelineChartView.subviews.forEach { $0.removeFromSuperview() }
         
-        timelineChartView.addSubview(chartView)
-        
-        NSLayoutConstraint.activate([
-            chartView.topAnchor.constraint(equalTo: timelineChartView.topAnchor),
-            chartView.leadingAnchor.constraint(equalTo: timelineChartView.leadingAnchor),
-            chartView.trailingAnchor.constraint(equalTo: timelineChartView.trailingAnchor),
-            chartView.bottomAnchor.constraint(equalTo: timelineChartView.bottomAnchor)
-        ])
-        
-        // Basit zaman çizelgesi gösterimi
         let timelineStackView = UIStackView()
         timelineStackView.translatesAutoresizingMaskIntoConstraints = false
         timelineStackView.axis = .vertical
         timelineStackView.spacing = 8
         timelineStackView.distribution = .fill
         
-        chartView.addSubview(timelineStackView)
+        timelineChartView.addSubview(timelineStackView)
         
         NSLayoutConstraint.activate([
-            timelineStackView.topAnchor.constraint(equalTo: chartView.topAnchor, constant: 16),
-            timelineStackView.leadingAnchor.constraint(equalTo: chartView.leadingAnchor, constant: 16),
-            timelineStackView.trailingAnchor.constraint(equalTo: chartView.trailingAnchor, constant: -16),
-            timelineStackView.bottomAnchor.constraint(equalTo: chartView.bottomAnchor, constant: -16)
+            timelineStackView.topAnchor.constraint(equalTo: timelineChartView.topAnchor, constant: 16),
+            timelineStackView.leadingAnchor.constraint(equalTo: timelineChartView.leadingAnchor, constant: 16),
+            timelineStackView.trailingAnchor.constraint(equalTo: timelineChartView.trailingAnchor, constant: -16),
+            timelineStackView.bottomAnchor.constraint(equalTo: timelineChartView.bottomAnchor, constant: -16)
         ])
         
-        // Tarih bazlı aktivite özeti
         let summaryLabel = UILabel()
         summaryLabel.translatesAutoresizingMaskIntoConstraints = false
         summaryLabel.text = "Son \(timelineData.count) günde toplam \(timelineData.reduce(0) { $0 + $1.count }) deprem gerçekleşti."
@@ -559,7 +637,6 @@ class StatisticsViewController: UIViewController {
         
         timelineStackView.addArrangedSubview(summaryLabel)
         
-        // Çizgi grafiği görsel temsili
         let timelineDataView = UIView()
         timelineDataView.translatesAutoresizingMaskIntoConstraints = false
         timelineDataView.backgroundColor = AppTheme.backgroundColor
@@ -570,7 +647,6 @@ class StatisticsViewController: UIViewController {
         let maxTimeLineHeight: CGFloat = 180
         timelineDataView.heightAnchor.constraint(equalToConstant: maxTimeLineHeight).isActive = true
         
-        // Son 7 günün verilerini göster veya tüm günleri, hangisi daha azsa
         let recentTimelineData = Array(timelineData.suffix(min(7, timelineData.count)))
         
         if !recentTimelineData.isEmpty {
@@ -661,20 +737,49 @@ class StatisticsViewController: UIViewController {
         barFillView.backgroundColor = color
         barFillView.layer.cornerRadius = 4
         
+        let valueBackground = UIView()
+        valueBackground.translatesAutoresizingMaskIntoConstraints = false
+        valueBackground.backgroundColor = color.withAlphaComponent(0.9)
+        valueBackground.layer.cornerRadius = 10
+        
         let valueLabel = UILabel()
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
         valueLabel.text = "\(value)"
         valueLabel.font = UIFont.systemFont(ofSize: 12, weight: .bold)
         valueLabel.textColor = .white
-        valueLabel.textAlignment = .right
+        valueLabel.textAlignment = .center
         
         barView.addSubview(titleLabel)
         barView.addSubview(barContainerView)
         barContainerView.addSubview(barFillView)
-        barFillView.addSubview(valueLabel)
         
-        // Calculate width based on max value
         let fillWidth = value > 0 ? CGFloat(value) / CGFloat(maxValue) : 0.01
+        
+        if fillWidth < 0.15 {
+
+            barView.addSubview(valueBackground)
+            valueBackground.addSubview(valueLabel)
+            
+            NSLayoutConstraint.activate([
+                valueBackground.leadingAnchor.constraint(equalTo: barFillView.trailingAnchor, constant: 4),
+                valueBackground.centerYAnchor.constraint(equalTo: barFillView.centerYAnchor),
+                valueBackground.heightAnchor.constraint(equalToConstant: 20),
+                valueBackground.widthAnchor.constraint(greaterThanOrEqualToConstant: 36),
+                
+                valueLabel.topAnchor.constraint(equalTo: valueBackground.topAnchor),
+                valueLabel.leadingAnchor.constraint(equalTo: valueBackground.leadingAnchor, constant: 6),
+                valueLabel.trailingAnchor.constraint(equalTo: valueBackground.trailingAnchor, constant: -6),
+                valueLabel.bottomAnchor.constraint(equalTo: valueBackground.bottomAnchor)
+            ])
+        } else {
+
+            barFillView.addSubview(valueLabel)
+            
+            NSLayoutConstraint.activate([
+                valueLabel.centerYAnchor.constraint(equalTo: barFillView.centerYAnchor),
+                valueLabel.trailingAnchor.constraint(equalTo: barFillView.trailingAnchor, constant: -8),
+            ])
+        }
         
         NSLayoutConstraint.activate([
             titleLabel.leadingAnchor.constraint(equalTo: barView.leadingAnchor),
@@ -689,10 +794,7 @@ class StatisticsViewController: UIViewController {
             barFillView.leadingAnchor.constraint(equalTo: barContainerView.leadingAnchor),
             barFillView.widthAnchor.constraint(equalTo: barContainerView.widthAnchor, multiplier: fillWidth),
             barFillView.topAnchor.constraint(equalTo: barContainerView.topAnchor),
-            barFillView.bottomAnchor.constraint(equalTo: barContainerView.bottomAnchor),
-            
-            valueLabel.trailingAnchor.constraint(equalTo: barFillView.trailingAnchor, constant: -8),
-            valueLabel.centerYAnchor.constraint(equalTo: barFillView.centerYAnchor)
+            barFillView.bottomAnchor.constraint(equalTo: barContainerView.bottomAnchor)
         ])
         
         return barView
