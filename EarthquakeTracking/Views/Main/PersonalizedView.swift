@@ -186,12 +186,12 @@ class PersonalizedViewController: UIViewController {
             action: #selector(openSimulation)
         )
         
-        let arScanFeature = createFeatureCard(
-            title: "AR Ev Güvenliği Taraması",
-            description: "Artırılmış gerçeklik ile evinizin deprem güvenliğini analiz edin.",
-            iconName: "camera.viewfinder",
+        let statsFeature = createFeatureCard(
+            title: "Deprem Analizi",
+            description: "Depremlerin büyüklüğünü, sayısını, yoğunluğunu analiz edin",
+            iconName: "chart.line.uptrend.xyaxis",
             color: AppTheme.accentColor,
-            action: #selector(openARScan)
+            action: #selector(openStats)
         )
         
         let riskModelFeature = createFeatureCard(
@@ -204,7 +204,7 @@ class PersonalizedViewController: UIViewController {
         
         featuresStackView.addArrangedSubview(notificationFeature)
         featuresStackView.addArrangedSubview(simulationFeature)
-        featuresStackView.addArrangedSubview(arScanFeature)
+        featuresStackView.addArrangedSubview(statsFeature)
         featuresStackView.addArrangedSubview(riskModelFeature)
     }
     
@@ -322,9 +322,9 @@ class PersonalizedViewController: UIViewController {
         navigationController?.pushViewController(simulationVC, animated: true)
     }
     
-    @objc private func openARScan() {
-        let arSimulationVC = ARRealObjectSimulationViewController(viewModel: viewModel)
-        navigationController?.pushViewController(arSimulationVC, animated: true)
+    @objc private func openStats() {
+        let statSimulationVC = StatisticsViewController(viewModel: viewModel)
+        navigationController?.pushViewController(statSimulationVC, animated: true)
     }
     
     @objc private func openRiskModel() {
