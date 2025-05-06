@@ -30,17 +30,48 @@ struct AppTheme {
     
     // MARK: - Magnitude Colors
     static func magnitudeColor(for magnitude: Double) -> UIColor {
-        switch magnitude {
-        case 0..<3.0:
-            return successColor
-        case 3.0..<5.0:
-            return UIColor(red: 241/255, green: 196/255, blue: 15/255, alpha: 1) // Yellow
-        case 5.0..<6.0:
-            return UIColor(red: 230/255, green: 126/255, blue: 34/255, alpha: 1) // Orange
-        case 6.0...:
-            return UIColor(red: 231/255, green: 76/255, blue: 60/255, alpha: 1) // Red
-        default:
+        if magnitude >= 6.0 {
+            return UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0) // Kırmızı
+        } else if magnitude >= 5.0 {
+            return UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0) // Koyu turuncu
+        } else if magnitude >= 4.0 {
+            return UIColor(red: 0.9, green: 0.6, blue: 0.0, alpha: 1.0) // Turuncu
+        } else if magnitude >= 3.0 {
+            return UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
+        } else if magnitude >= 2.0 {
+            return UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0) // Lime yeşil
+        } else {
+            return UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0) // Yeşil
+        }
+    }
+    
+    // MARK: - Magnitude Text Colors
+    static func magnitudeTextColor(for magnitude: Double) -> UIColor {
+        if magnitude >= 5.0 {
+            return UIColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0) // Kırmızı
+        } else if magnitude >= 4.0 {
+            return UIColor(red: 0.9, green: 0.6, blue: 0.0, alpha: 1.0) // Turuncu
+        } else if magnitude >= 3.0 {
+            return UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
+        } else {
             return bodyTextColor
+        }
+    }
+    
+    // MARK: - Magnitude Scale
+    static func magnitudeScale(for magnitude: Double) -> CGFloat {
+        if magnitude >= 6.0 {
+            return 1.4
+        } else if magnitude >= 5.0 {
+            return 1.2
+        } else if magnitude >= 4.0 {
+            return 1.1
+        } else if magnitude >= 3.0 {
+            return 1.0
+        } else if magnitude >= 2.0 {
+            return 0.9
+        } else {
+            return 0.8
         }
     }
     

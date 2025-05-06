@@ -118,7 +118,6 @@ class EarthquakeListViewController: UIViewController {
     
     private func fetchEarthquakes() {
         viewModel.fetchEarthquakes()
-
         viewModel.applySortOnLoad()
     }
     
@@ -198,7 +197,6 @@ extension EarthquakeListViewController: UITableViewDelegate {
         let mapViewController = EarthquakeMapViewController()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-
             if let latitude = Double(selectedEarthquake.latitude),
                let longitude = Double(selectedEarthquake.longitude) {
                 let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -211,7 +209,6 @@ extension EarthquakeListViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         let detailsAction = UIContextualAction(style: .normal, title: "Detaylar") { [weak self] (_, _, completion) in
-
             self?.showEarthquakeDetails(self?.viewModel.earthquakes[indexPath.row])
             completion(true)
         }
@@ -237,10 +234,14 @@ class ModernEarthquakeCell: UITableViewCell {
     private let locationLabel = UILabel()
     private let dateTimeLabel = UILabel()
     private let magnitudeCircleView = UIView()
-    private let magnitudeLabel = UILabel()
+    private let magnitudeIconView = UIImageView()
     private let infoStackView = UIStackView()
-    private let mapPreviewImageView = UIImageView()
+    private let depthInfoView = UIView()
     private let depthLabel = UILabel()
+    private let depthIconView = UIImageView()
+    private let magnitudeInfoView = UIView()
+    private let magnitudeValueLabel = UILabel()
+    private let magnitudeIconView2 = UIImageView()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -276,45 +277,53 @@ class ModernEarthquakeCell: UITableViewCell {
         magnitudeCircleView.layer.shadowRadius = 4
         magnitudeCircleView.layer.shadowOpacity = 0.3
         
-        magnitudeLabel.translatesAutoresizingMaskIntoConstraints = false
-        magnitudeLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        magnitudeLabel.textColor = .white
-        magnitudeLabel.textAlignment = .center
+        magnitudeIconView.translatesAutoresizingMaskIntoConstraints = false
+        magnitudeIconView.contentMode = .scaleAspectFit
+        magnitudeIconView.image = UIImage(systemName: "waveform.path.ecg")
+        magnitudeIconView.tintColor = .white
         
         infoStackView.translatesAutoresizingMaskIntoConstraints = false
         infoStackView.axis = .horizontal
-        infoStackView.spacing = 8
+        infoStackView.spacing = 16
         infoStackView.alignment = .center
+        infoStackView.distribution = .fillEqually
         
-        depthLabel.translatesAutoresizingMaskIntoConstraints = false
-        depthLabel.font = UIFont.systemFont(ofSize: 14)
-        depthLabel.textColor = AppTheme.bodyTextColor
+        depthInfoView.translatesAutoresizingMaskIntoConstraints = false
         
-        mapPreviewImageView.translatesAutoresizingMaskIntoConstraints = false
-        mapPreviewImageView.contentMode = .scaleAspectFill
-        mapPreviewImageView.layer.cornerRadius = 6
-        mapPreviewImageView.clipsToBounds = true
-        mapPreviewImageView.image = UIImage(systemName: "mappin.circle.fill")
-        mapPreviewImageView.tintColor = AppTheme.primaryColor
-        mapPreviewImageView.backgroundColor = AppTheme.tertiaryBackgroundColor
-        
-        let depthIconView = UIImageView(image: UIImage(systemName: "arrow.down"))
+        depthIconView.image = UIImage(systemName: "arrow.down")
         depthIconView.tintColor = AppTheme.primaryColor
         depthIconView.contentMode = .scaleAspectFit
-        depthIconView.widthAnchor.constraint(equalToConstant: 14).isActive = true
-        depthIconView.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        depthIconView.translatesAutoresizingMaskIntoConstraints = false
         
-        let depthStack = UIStackView(arrangedSubviews: [depthIconView, depthLabel])
-        depthStack.spacing = 4
-        depthStack.alignment = .center
+        depthLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        depthLabel.textColor = AppTheme.bodyTextColor
+        depthLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        infoStackView.addArrangedSubview(depthStack)
+        magnitudeInfoView.translatesAutoresizingMaskIntoConstraints = false
         
-        containerView.addSubview(mapPreviewImageView)
+        magnitudeIconView2.image = UIImage(systemName: "waveform.path.ecg")
+        magnitudeIconView2.tintColor = AppTheme.primaryColor
+        magnitudeIconView2.contentMode = .scaleAspectFit
+        magnitudeIconView2.translatesAutoresizingMaskIntoConstraints = false
+        
+        magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        magnitudeValueLabel.textAlignment = .left
+        magnitudeValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        magnitudeCircleView.addSubview(magnitudeIconView)
+        
+        depthInfoView.addSubview(depthIconView)
+        depthInfoView.addSubview(depthLabel)
+        
+        magnitudeInfoView.addSubview(magnitudeIconView2)
+        magnitudeInfoView.addSubview(magnitudeValueLabel)
+        
+        infoStackView.addArrangedSubview(depthInfoView)
+        infoStackView.addArrangedSubview(magnitudeInfoView)
+        
         containerView.addSubview(locationLabel)
         containerView.addSubview(dateTimeLabel)
         containerView.addSubview(magnitudeCircleView)
-        magnitudeCircleView.addSubview(magnitudeLabel)
         containerView.addSubview(infoStackView)
         
         contentView.addSubview(containerView)
@@ -330,8 +339,10 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitudeCircleView.widthAnchor.constraint(equalToConstant: 52),
             magnitudeCircleView.heightAnchor.constraint(equalToConstant: 52),
             
-            magnitudeLabel.centerXAnchor.constraint(equalTo: magnitudeCircleView.centerXAnchor),
-            magnitudeLabel.centerYAnchor.constraint(equalTo: magnitudeCircleView.centerYAnchor),
+            magnitudeIconView.centerXAnchor.constraint(equalTo: magnitudeCircleView.centerXAnchor),
+            magnitudeIconView.centerYAnchor.constraint(equalTo: magnitudeCircleView.centerYAnchor),
+            magnitudeIconView.widthAnchor.constraint(equalToConstant: 28),
+            magnitudeIconView.heightAnchor.constraint(equalToConstant: 28),
             
             locationLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 16),
             locationLabel.leadingAnchor.constraint(equalTo: magnitudeCircleView.trailingAnchor, constant: 16),
@@ -341,10 +352,28 @@ class ModernEarthquakeCell: UITableViewCell {
             dateTimeLabel.leadingAnchor.constraint(equalTo: magnitudeCircleView.trailingAnchor, constant: 16),
             dateTimeLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             
-            infoStackView.topAnchor.constraint(equalTo: dateTimeLabel.bottomAnchor, constant: 8),
+            infoStackView.topAnchor.constraint(equalTo: dateTimeLabel.bottomAnchor, constant: 12),
             infoStackView.leadingAnchor.constraint(equalTo: magnitudeCircleView.trailingAnchor, constant: 16),
             infoStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
-            infoStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
+            infoStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+            
+            depthIconView.leadingAnchor.constraint(equalTo: depthInfoView.leadingAnchor),
+            depthIconView.centerYAnchor.constraint(equalTo: depthInfoView.centerYAnchor),
+            depthIconView.widthAnchor.constraint(equalToConstant: 16),
+            depthIconView.heightAnchor.constraint(equalToConstant: 16),
+            
+            depthLabel.leadingAnchor.constraint(equalTo: depthIconView.trailingAnchor, constant: 8),
+            depthLabel.centerYAnchor.constraint(equalTo: depthInfoView.centerYAnchor),
+            depthLabel.trailingAnchor.constraint(equalTo: depthInfoView.trailingAnchor),
+            
+            magnitudeIconView2.leadingAnchor.constraint(equalTo: magnitudeInfoView.leadingAnchor),
+            magnitudeIconView2.centerYAnchor.constraint(equalTo: magnitudeInfoView.centerYAnchor),
+            magnitudeIconView2.widthAnchor.constraint(equalToConstant: 16),
+            magnitudeIconView2.heightAnchor.constraint(equalToConstant: 16),
+            
+            magnitudeValueLabel.leadingAnchor.constraint(equalTo: magnitudeIconView2.trailingAnchor, constant: 8),
+            magnitudeValueLabel.centerYAnchor.constraint(equalTo: magnitudeInfoView.centerYAnchor),
+            magnitudeValueLabel.trailingAnchor.constraint(equalTo: magnitudeInfoView.trailingAnchor)
         ])
     }
     
@@ -368,13 +397,31 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitude = "N/A"
         }
         
-        magnitudeLabel.text = magnitude
         magnitudeCircleView.backgroundColor = AppTheme.magnitudeColor(for: magValue)
         
         if magValue >= 5.0 {
-            magnitudeLabel.font = UIFont.systemFont(ofSize: 20, weight: .heavy)
+            magnitudeIconView.image = UIImage(systemName: "exclamationmark.triangle.fill")
+        } else if magValue >= 4.0 {
+            magnitudeIconView.image = UIImage(systemName: "exclamationmark")
         } else {
-            magnitudeLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+            magnitudeIconView.image = UIImage(systemName: "waveform.path.ecg")
+        }
+        
+        if magValue >= 5.0 {
+            magnitudeIconView.widthAnchor.constraint(equalToConstant: 32).isActive = true
+            magnitudeIconView.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        } else {
+            magnitudeIconView.widthAnchor.constraint(equalToConstant: 28).isActive = true
+            magnitudeIconView.heightAnchor.constraint(equalToConstant: 28).isActive = true
+        }
+        
+        magnitudeValueLabel.text = "\(magnitude) ML"
+        magnitudeValueLabel.textColor = AppTheme.magnitudeTextColor(for: magValue)
+        
+        if magValue >= 5.0 {
+            magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .heavy)
+        } else {
+            magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         }
         
         depthLabel.text = "\(earthquake.depth_km) km"
@@ -454,7 +501,7 @@ class EarthquakeDetailsViewController: UIViewController {
     }
     
     private func setupContentView() {
-
+        
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(scrollView)
@@ -523,12 +570,12 @@ class EarthquakeDetailsViewController: UIViewController {
     }
     
     private func addSectionToStackView(stackView: UIStackView, sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) {
-
+        
         let sectionView = UIView()
         sectionView.translatesAutoresizingMaskIntoConstraints = false
         sectionView.backgroundColor = AppTheme.secondaryBackgroundColor
         sectionView.layer.cornerRadius = 12
-
+        
         let iconView = UIImageView(image: UIImage(systemName: imageName))
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.contentMode = .scaleAspectFit
@@ -571,7 +618,7 @@ class EarthquakeDetailsViewController: UIViewController {
     }
     
     private func addInformationSection(stackView: UIStackView) {
-
+        
         let infoView = UIView()
         infoView.translatesAutoresizingMaskIntoConstraints = false
         infoView.backgroundColor = AppTheme.tertiaryBackgroundColor
@@ -653,7 +700,7 @@ class EmptyStateView: UIView {
     }
     
     private func setupView(image: UIImage, title: String, message: String) {
-
+        
         containerView.translatesAutoresizingMaskIntoConstraints = false
         containerView.backgroundColor = AppTheme.secondaryBackgroundColor
         containerView.layer.cornerRadius = 16
