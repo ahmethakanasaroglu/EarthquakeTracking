@@ -20,10 +20,13 @@ class MistralManager: ObservableObject {
             TALİMATLAR:
             - HER ZAMAN ve SADECE Türkçe dilinde yanıt ver.
             - Akıcı ve doğru Türkçe kullan, çeviri gibi görünmeyen doğal cümleler kur.
-            - Yanıtların 6-7 kısa ve net cümleden oluşsun.
+            - Yanıtların 9-10 kısa ve net cümleden oluşsun.
             - Cümleler arasında mantıksal bağlantı olsun, bütünlük içinde olsun.
             - Teknik bilgileri basit ve anlaşılır Türkçe ile açıkla.
             - İngilizce kelime veya ifadeler KULLANMA.
+            - Türkçe dil kurallarına dikkat et, doğru ve doğal cümleler olsun. Sohbet ağzıyla konuşabilirsin. ASLA İMLA HATASI VE KONUŞMA BOZUKLUĞU, SAÇMA CÜMLE YAPISI GİBİ HATALAR YAPMA.
+            - SANA SORULAN SORULARI İYİCE ANLAYIP CEVAP VER. ALAKASIZ CEVAPLAR VERME, GEREKSİZ KONUŞMAYI UZATMA.
+
             
             Depremler, deprem güvenliği, deprem hazırlığı ve Türkiye'deki depremler hakkında doğru bilgiler ver. Bilimsel ve güncel bilgilere sadık kal.
             """
@@ -52,7 +55,7 @@ class MistralManager: ObservableObject {
         let userInstruction = """
             Soru: \(userMessage)
             
-            Lütfen bu soruya SADECE TÜRKÇE olarak, 6-7 cümleyle kısa ve öz yanıt ver. 
+            Lütfen bu soruya SADECE TÜRKÇE olarak, 9-10 cümleyle kısa ve öz yanıt ver. 
             Cümleler dilbilgisi açısından doğru, anlamlı ve bağlantılı olmalı.
             Kesinlikle İngilizce kelime kullanma.
             """
@@ -213,10 +216,12 @@ class MistralManager: ObservableObject {
             TALİMATLAR:
             - HER ZAMAN ve SADECE Türkçe dilinde yanıt ver.
             - Akıcı ve doğru Türkçe kullan, çeviri gibi görünmeyen doğal cümleler kur.
-            - Yanıtların 6-7 kısa ve net cümleden oluşsun.
+            - Yanıtların 9-10 kısa ve net cümleden oluşsun.
             - Cümleler arasında mantıksal bağlantı olsun, bütünlük içinde olsun.
             - Teknik bilgileri basit ve anlaşılır Türkçe ile açıkla.
             - İngilizce kelime veya ifadeler KULLANMA.
+            - Türkçe dil kurallarına dikkat et, doğru ve doğal cümleler olsun. Sohbet ağzıyla konuşabilirsin. ASLA İMLA HATASI VE KONUŞMA BOZUKLUĞU, SAÇMA CÜMLE YAPISI GİBİ HATALAR YAPMA.
+            - SANA SORULAN SORULARI İYİCE ANLAYIP CEVAP VER. ALAKASIZ CEVAPLAR VERME, GEREKSİZ KONUŞMAYI UZATMA.
             
             Depremler, deprem güvenliği, deprem hazırlığı ve Türkiye'deki depremler hakkında doğru bilgiler ver. Bilimsel ve güncel bilgilere sadık kal.
             """
