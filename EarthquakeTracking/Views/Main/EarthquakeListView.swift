@@ -1,11 +1,9 @@
 import UIKit
-import Combine
 import MapKit
 
 class EarthquakeListViewController: UIViewController {
     
     private let viewModel = EarthquakeListViewModel()
-    private var cancellables = Set<AnyCancellable>()
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -53,6 +51,10 @@ class EarthquakeListViewController: UIViewController {
         fetchEarthquakes()
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     private func setupUI() {
         title = "Depremler"
         view.backgroundColor = AppTheme.backgroundColor
@@ -86,17 +88,41 @@ class EarthquakeListViewController: UIViewController {
     }
     
     private func setupBindings() {
-        viewModel.$earthquakes
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] earthquakes in
-                self?.tableView.reloadData()
-                self?.updateEmptyState(earthquakes.isEmpty)
-            }
-            .store(in: &cancellables)
+
+        viewModel.delegate = self
         
-        viewModel.$isLoading
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakesUpdated),
+            name: EarthquakeListViewModel.earthquakesUpdatedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLoadingStateChanged(_:)),
+            name: EarthquakeListViewModel.loadingStateChangedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleErrorReceived(_:)),
+            name: EarthquakeListViewModel.errorReceivedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleEarthquakesUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.tableView.reloadData()
+            self?.updateEmptyState(self?.viewModel.earthquakes.isEmpty ?? true)
+        }
+    }
+    
+    @objc private func handleLoadingStateChanged(_ notification: Notification) {
+        if let isLoading = notification.userInfo?["isLoading"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 if isLoading {
                     self?.activityIndicator.startAnimating()
                     self?.emptyStateView.isHidden = true
@@ -105,15 +131,15 @@ class EarthquakeListViewController: UIViewController {
                     self?.refreshControl.endRefreshing()
                 }
             }
-            .store(in: &cancellables)
-        
-        viewModel.$errorMessage
-            .receive(on: DispatchQueue.main)
-            .compactMap { $0 }
-            .sink { [weak self] message in
-                self?.showError(message: message)
+        }
+    }
+    
+    @objc private func handleErrorReceived(_ notification: Notification) {
+        if let errorMessage = notification.userInfo?["errorMessage"] as? String {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
             }
-            .store(in: &cancellables)
+        }
     }
     
     private func fetchEarthquakes() {
@@ -167,6 +193,36 @@ class EarthquakeListViewController: UIViewController {
         let okAction = UIAlertAction(title: "Tamam", style: .default)
         alertController.addAction(okAction)
         present(alertController, animated: true)
+    }
+}
+
+// MARK: - EarthquakeListViewModelDelegate
+extension EarthquakeListViewController: EarthquakeListViewModelDelegate {
+    func didUpdateEarthquakes() {
+        DispatchQueue.main.async { [weak self] in
+            self?.tableView.reloadData()
+            self?.updateEmptyState(self?.viewModel.earthquakes.isEmpty ?? true)
+        }
+    }
+    
+    func didChangeLoadingState(isLoading: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            if isLoading {
+                self?.activityIndicator.startAnimating()
+                self?.emptyStateView.isHidden = true
+            } else {
+                self?.activityIndicator.stopAnimating()
+                self?.refreshControl.endRefreshing()
+            }
+        }
+    }
+    
+    func didReceiveError(message: String?) {
+        if let errorMessage = message {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
+            }
+        }
     }
 }
 

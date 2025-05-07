@@ -1,12 +1,10 @@
 import UIKit
 import AVFoundation
-import Combine
 
 class EarthquakeSimulationViewController: UIViewController {
     
     // MARK: - Properties
     private let viewModel: PersonalizedViewModel
-    private var cancellables = Set<AnyCancellable>()
     private var animationTimer: Timer?
     private var audioPlayer: AVAudioPlayer?
     
@@ -113,6 +111,12 @@ class EarthquakeSimulationViewController: UIViewController {
         return indicator
     }()
     
+    // MARK: - Notification constants
+    private let simulationActiveChangedNotification = PersonalizedViewModel.simulationSettingsChangedNotification
+    static let simulationActiveChangedNotification = Notification.Name("simulationActiveChangedNotification")
+    static let simulationIntensityChangedNotification = Notification.Name("simulationIntensityChangedNotification")
+    static let simulationEffectChangedNotification = Notification.Name("simulationEffectChangedNotification")
+    
     // MARK: - Initialization
     init(viewModel: PersonalizedViewModel) {
         self.viewModel = viewModel
@@ -133,6 +137,10 @@ class EarthquakeSimulationViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         viewModel.stopSimulation()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup
@@ -194,26 +202,39 @@ class EarthquakeSimulationViewController: UIViewController {
     
     private func setupBindings() {
 
-        viewModel.$isSimulationActive
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isActive in
-                self?.updateUIForSimulationState(isActive: isActive)
-            }
-            .store(in: &cancellables)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSimulationSettingsChanged(_:)),
+            name: PersonalizedViewModel.simulationSettingsChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleSimulationSettingsChanged(_ notification: Notification) {
+        guard let userInfo = notification.userInfo else { return }
         
-        viewModel.$simulationIntensity
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] intensity in
-                self?.applySimulationEffect(intensity: intensity)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if let isActive = userInfo["isActive"] as? Bool {
+                self.updateUIForSimulationState(isActive: isActive)
             }
-            .store(in: &cancellables)
-        
-        viewModel.$simulationEffect
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] effect in
-                self?.effectDescriptionLabel.text = effect.description
+            
+            if let magnitude = userInfo["magnitude"] as? Double {
+                self.magnitudeValueLabel.text = String(format: "M %.1f", magnitude)
+                self.magnitudeValueLabel.textColor = self.getMagnitudeColor(magnitude)
+                self.magnitudeDescriptionLabel.text = self.getMagnitudeDescription(magnitude)
+                self.magnitudeSlider.value = Float(magnitude)
             }
-            .store(in: &cancellables)
+            
+            if let intensity = userInfo["intensity"] as? Double {
+                self.applySimulationEffect(intensity: intensity)
+            }
+            
+            if let effect = userInfo["effect"] as? SimulationEffect {
+                self.effectDescriptionLabel.text = effect.description
+            }
+        }
     }
     
     // MARK: - UI Updates
@@ -228,7 +249,6 @@ class EarthquakeSimulationViewController: UIViewController {
             
             startEarthquakeAnimation()
             
-            playEarthquakeSound()
         } else {
             startSimulationButton.setTitle("Simülasyonu Başlat", for: .normal)
             startSimulationButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
@@ -237,8 +257,6 @@ class EarthquakeSimulationViewController: UIViewController {
             magnitudeSlider.isEnabled = true
             
             stopEarthquakeAnimation()
-            
-            stopEarthquakeSound()
         }
     }
     
@@ -252,8 +270,8 @@ class EarthquakeSimulationViewController: UIViewController {
     // MARK: - Actions
     
     @objc private func magnitudeSliderChanged(_ sender: UISlider) {
-        let magnitude = Double(round(sender.value * 10) / 10) // Round to nearest 0.1
-        viewModel.selectedSimulationMagnitude = magnitude
+        let magnitude = Double(round(sender.value * 10) / 10)
+        viewModel.setSimulationMagnitude(magnitude)
         updateMagnitudeDisplay()
     }
     
@@ -268,7 +286,7 @@ class EarthquakeSimulationViewController: UIViewController {
     // MARK: - Simulation Effects
     
     private func applySimulationEffect(intensity: Double) {
-        let scale = 1.0 + abs(intensity) * 0.1
+
         let translation = CGAffineTransform(translationX: intensity * 10, y: 0)
         
         UIView.animate(withDuration: 0.1, delay: 0, options: .allowUserInteraction) {
@@ -299,7 +317,7 @@ class EarthquakeSimulationViewController: UIViewController {
                     .concatenating(CGAffineTransform(translationX: intensity * 5, y: intensity * 3))
                 
                 self.simulationImageView.tintColor = abs(intensity) > 0.5 ? .systemRed :
-                                                     abs(intensity) > 0.3 ? .systemOrange : .systemBlue
+                abs(intensity) > 0.3 ? .systemOrange : .systemBlue
             }
         }
     }
@@ -315,14 +333,6 @@ class EarthquakeSimulationViewController: UIViewController {
         }
     }
     
-    private func playEarthquakeSound() {
-        print("Playing earthquake sound effect")
-    }
-    
-    private func stopEarthquakeSound() {
-        audioPlayer?.stop()
-        print("Stopping earthquake sound effect")
-    }
     
     // MARK: - Helper Methods
     

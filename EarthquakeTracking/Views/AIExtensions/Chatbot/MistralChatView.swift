@@ -45,7 +45,6 @@ class MistralChatViewController: UIViewController {
         setupInfoView()
         setupMessageBar()
         
-        // View Hiyerarşisini Kur
         view.addSubview(tableView)
         view.addSubview(infoView)
         view.addSubview(messageInputBar)
@@ -125,7 +124,6 @@ class MistralChatViewController: UIViewController {
         messageInputBar.layer.shadowOpacity = 0.1
         messageInputBar.layer.shadowRadius = 5
         
-        // Metin alanı
         let textFieldContainer = UIView()
         textFieldContainer.translatesAutoresizingMaskIntoConstraints = false
         textFieldContainer.backgroundColor = .secondarySystemBackground
@@ -138,7 +136,6 @@ class MistralChatViewController: UIViewController {
         messageTextField.returnKeyType = .send
         messageTextField.delegate = self
         
-        // Gönder butonu
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill"), for: .normal)
         sendButton.tintColor = .systemIndigo
@@ -223,7 +220,7 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - Notification Observers
     private func setupNotificationObservers() {
-        // Mesajlar değiştiğinde
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(messagesDidChange),
@@ -231,7 +228,6 @@ class MistralChatViewController: UIViewController {
             object: nil
         )
         
-        // Yazma durumu değiştiğinde
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(typingStatusDidChange),
@@ -239,7 +235,6 @@ class MistralChatViewController: UIViewController {
             object: nil
         )
         
-        // Hata oluştuğunda
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(errorDidChange),
@@ -340,7 +335,7 @@ class MistralChatViewController: UIViewController {
     // MARK: - Helper Methods
     private func scrollToBottom() {
         if mistralManager.messages.count > 0 {
-            // Sistem mesajlarını hariç tut (kullanıcıya gösterilmeyen)
+
             let visibleMessages = mistralManager.messages.filter { $0.role != .system }
             
             if visibleMessages.count > 0 {

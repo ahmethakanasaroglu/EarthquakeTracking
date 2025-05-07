@@ -1,14 +1,11 @@
 import UIKit
 import MapKit
-import Combine
 
 class RiskModelViewController: UIViewController {
     
     // MARK: - Properties
     private let viewModel: PersonalizedViewModel
-    private var cancellables = Set<AnyCancellable>()
     
-    // Risk bölgesi verilerini takip etmek için yeni özellik
     private var riskRegions: [RiskRegion] = []
     
     // MARK: - UI Elements
@@ -177,13 +174,33 @@ class RiskModelViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupBindings()
+        
+        updateLoadingState(isLoading: true)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        // Risk verilerini yükle
+        if viewModel.riskLevelForCurrentLocation != .unknown {
+            updateRiskUI(riskLevel: viewModel.riskLevelForCurrentLocation)
+        }
+        
+        updateLoadingState(isLoading: viewModel.isLoadingRiskData)
+        
+        if !viewModel.riskAreaCoordinates.isEmpty {
+            updateMapOverlays(coordinates: viewModel.riskAreaCoordinates)
+        }
+        
+        if let userLocation = viewModel.userLocation {
+            let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
+            mapView.setRegion(region, animated: true)
+        }
+        
         viewModel.loadRiskDataForCurrentLocation()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup
@@ -191,13 +208,11 @@ class RiskModelViewController: UIViewController {
         title = "Deprem Riski Analizi"
         view.backgroundColor = .systemBackground
         
-        // Harita ve bilgi panelini ekle
         view.addSubview(mapView)
         view.addSubview(infoContainerView)
         view.addSubview(legendView)
         view.addSubview(loadingIndicator)
         
-        // Bilgi paneli içeriğini ekle
         infoContainerView.addSubview(riskTitleLabel)
         infoContainerView.addSubview(riskLevelLabel)
         infoContainerView.addSubview(descriptionLabel)
@@ -205,7 +220,6 @@ class RiskModelViewController: UIViewController {
         infoContainerView.addSubview(earthquakeCountLabel)
         infoContainerView.addSubview(lastBigEarthquakeLabel)
         
-        // Lejant görünümü içeriğini ekle
         legendView.addSubview(legendTitleLabel)
         legendView.addSubview(highRiskView)
         legendView.addSubview(mediumRiskView)
@@ -214,124 +228,131 @@ class RiskModelViewController: UIViewController {
         legendView.addSubview(mediumRiskLabel)
         legendView.addSubview(lowRiskLabel)
         
-        // Constraint'leri ayarla
         NSLayoutConstraint.activate([
-            // Harita
+
             mapView.topAnchor.constraint(equalTo: view.topAnchor),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            // Bilgi Paneli
             infoContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             infoContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             infoContainerView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             
-            // Risk Başlığı
             riskTitleLabel.topAnchor.constraint(equalTo: infoContainerView.topAnchor, constant: 16),
             riskTitleLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             riskTitleLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             
-            // Risk Seviyesi
             riskLevelLabel.topAnchor.constraint(equalTo: riskTitleLabel.bottomAnchor, constant: 8),
             riskLevelLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             riskLevelLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             
-            // Açıklama
             descriptionLabel.topAnchor.constraint(equalTo: riskLevelLabel.bottomAnchor, constant: 8),
             descriptionLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             descriptionLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             
-            // Tarihsel Veri Başlığı
             historicalDataLabel.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 16),
             historicalDataLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             historicalDataLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             
-            // Deprem Sayısı
             earthquakeCountLabel.topAnchor.constraint(equalTo: historicalDataLabel.bottomAnchor, constant: 8),
             earthquakeCountLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             earthquakeCountLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             
-            // Son Büyük Deprem
             lastBigEarthquakeLabel.topAnchor.constraint(equalTo: earthquakeCountLabel.bottomAnchor, constant: 8),
             lastBigEarthquakeLabel.leadingAnchor.constraint(equalTo: infoContainerView.leadingAnchor, constant: 16),
             lastBigEarthquakeLabel.trailingAnchor.constraint(equalTo: infoContainerView.trailingAnchor, constant: -16),
             lastBigEarthquakeLabel.bottomAnchor.constraint(equalTo: infoContainerView.bottomAnchor, constant: -16),
             
-            // Lejant Görünümü
             legendView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             legendView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             legendView.widthAnchor.constraint(equalToConstant: 100),
             
-            // Lejant Başlığı
             legendTitleLabel.topAnchor.constraint(equalTo: legendView.topAnchor, constant: 8),
             legendTitleLabel.leadingAnchor.constraint(equalTo: legendView.leadingAnchor, constant: 8),
             legendTitleLabel.trailingAnchor.constraint(equalTo: legendView.trailingAnchor, constant: -8),
             
-            // Yüksek Risk Göstergesi
             highRiskView.topAnchor.constraint(equalTo: legendTitleLabel.bottomAnchor, constant: 8),
             highRiskView.leadingAnchor.constraint(equalTo: legendView.leadingAnchor, constant: 8),
             highRiskView.widthAnchor.constraint(equalToConstant: 16),
             highRiskView.heightAnchor.constraint(equalToConstant: 16),
             
-            // Orta Risk Göstergesi
             mediumRiskView.topAnchor.constraint(equalTo: highRiskView.bottomAnchor, constant: 8),
             mediumRiskView.leadingAnchor.constraint(equalTo: legendView.leadingAnchor, constant: 8),
             mediumRiskView.widthAnchor.constraint(equalToConstant: 16),
             mediumRiskView.heightAnchor.constraint(equalToConstant: 16),
             
-            // Düşük Risk Göstergesi
             lowRiskView.topAnchor.constraint(equalTo: mediumRiskView.bottomAnchor, constant: 8),
             lowRiskView.leadingAnchor.constraint(equalTo: legendView.leadingAnchor, constant: 8),
             lowRiskView.widthAnchor.constraint(equalToConstant: 16),
             lowRiskView.heightAnchor.constraint(equalToConstant: 16),
             lowRiskView.bottomAnchor.constraint(equalTo: legendView.bottomAnchor, constant: -8),
             
-            // Yüksek Risk Etiketi
             highRiskLabel.centerYAnchor.constraint(equalTo: highRiskView.centerYAnchor),
             highRiskLabel.leadingAnchor.constraint(equalTo: highRiskView.trailingAnchor, constant: 8),
             highRiskLabel.trailingAnchor.constraint(equalTo: legendView.trailingAnchor, constant: -8),
             
-            // Orta Risk Etiketi
             mediumRiskLabel.centerYAnchor.constraint(equalTo: mediumRiskView.centerYAnchor),
             mediumRiskLabel.leadingAnchor.constraint(equalTo: mediumRiskView.trailingAnchor, constant: 8),
             mediumRiskLabel.trailingAnchor.constraint(equalTo: legendView.trailingAnchor, constant: -8),
             
-            // Düşük Risk Etiketi
             lowRiskLabel.centerYAnchor.constraint(equalTo: lowRiskView.centerYAnchor),
             lowRiskLabel.leadingAnchor.constraint(equalTo: lowRiskView.trailingAnchor, constant: 8),
             lowRiskLabel.trailingAnchor.constraint(equalTo: legendView.trailingAnchor, constant: -8),
             
-            // Yükleme Göstergesi
             loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
     
     private func setupBindings() {
-        // Risk seviyesi değişimini izle
-        viewModel.$riskLevelForCurrentLocation
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] riskLevel in
-                self?.updateRiskUI(riskLevel: riskLevel)
-            }
-            .store(in: &cancellables)
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRiskDataChanged(_:)),
+            name: PersonalizedViewModel.riskDataChangedNotification,
+            object: nil
+        )
         
-        // Yükleme durumunu izle
-        viewModel.$isLoadingRiskData
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
-                self?.updateLoadingState(isLoading: isLoading)
-            }
-            .store(in: &cancellables)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleUserLocationChanged(_:)),
+            name: PersonalizedViewModel.userLocationChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleRiskDataChanged(_ notification: Notification) {
+        guard let userInfo = notification.userInfo else { return }
         
-        // Risk alanı koordinatlarını izle
-        viewModel.$riskAreaCoordinates
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] coordinates in
-                self?.updateMapOverlays(coordinates: coordinates)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if let riskLevel = userInfo["level"] as? RiskLevel {
+                self.updateRiskUI(riskLevel: riskLevel)
             }
-            .store(in: &cancellables)
+            
+            if let isLoading = userInfo["isLoading"] as? Bool {
+                self.updateLoadingState(isLoading: isLoading)
+            }
+            
+            if let coordinates = userInfo["coordinates"] as? [CLLocationCoordinate2D] {
+                self.updateMapOverlays(coordinates: coordinates)
+            }
+        }
+    }
+    
+    @objc private func handleUserLocationChanged(_ notification: Notification) {
+        guard let userInfo = notification.userInfo else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if let location = userInfo["location"] as? CLLocationCoordinate2D {
+                let region = MKCoordinateRegion(center: location, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
+                self.mapView.setRegion(region, animated: true)
+            }
+        }
     }
     
     // MARK: - UI Updates
@@ -339,7 +360,6 @@ class RiskModelViewController: UIViewController {
     private func updateRiskUI(riskLevel: RiskLevel) {
         riskLevelLabel.text = riskLevel.rawValue
         
-        // Risk seviyesine göre renklendir
         switch riskLevel {
         case .high:
             riskLevelLabel.textColor = .systemRed
@@ -367,8 +387,10 @@ class RiskModelViewController: UIViewController {
     private func updateLoadingState(isLoading: Bool) {
         if isLoading {
             loadingIndicator.startAnimating()
-            riskLevelLabel.text = "Analiz ediliyor..."
-            riskLevelLabel.textColor = .systemGray
+            if viewModel.riskLevelForCurrentLocation == .unknown {
+                riskLevelLabel.text = "Analiz ediliyor..."
+                riskLevelLabel.textColor = .systemGray
+            }
         } else {
             loadingIndicator.stopAnimating()
         }
@@ -379,37 +401,32 @@ class RiskModelViewController: UIViewController {
         mapView.removeOverlays(mapView.overlays)
         riskRegions.removeAll()
         
-        // Koordinatlar boş ise çık
         if coordinates.isEmpty {
             return
         }
         
-        // Kullanıcı konumu varsa haritayı o bölgeye odakla
         if let userLocation = viewModel.userLocation {
             let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
             mapView.setRegion(region, animated: true)
             
-            // Kullanıcı konumu için doğru riski yansıt
-            // ÖNEMLİ: Burada kullanıcı konumu için riski, viewModel.riskLevelForCurrentLocation'a göre ayarlıyoruz
             var userRiskValue: Double
             var userRiskLevel: RiskLevel
             
             switch viewModel.riskLevelForCurrentLocation {
             case .low:
-                userRiskValue = 0.3 // Düşük risk değeri
+                userRiskValue = 0.3
                 userRiskLevel = .low
             case .medium:
-                userRiskValue = 0.6 // Orta risk değeri
+                userRiskValue = 0.6
                 userRiskLevel = .medium
             case .high:
-                userRiskValue = 0.9 // Yüksek risk değeri
+                userRiskValue = 0.9
                 userRiskLevel = .high
             case .unknown:
-                userRiskValue = 0.1 // Bilinmeyen risk değeri
+                userRiskValue = 0.1
                 userRiskLevel = .low
             }
             
-            // Kullanıcı konumu için risk bölgesi oluştur
             let userRegion = RiskRegion(
                 coordinate: userLocation,
                 radius: 800,
@@ -419,10 +436,8 @@ class RiskModelViewController: UIViewController {
             riskRegions.append(userRegion)
         }
         
-        // Tüm haritayı kapsayan benzersiz risk bölgeleri oluştur
         createNonOverlappingRiskZones()
         
-        // Tüm risk bölgelerini haritaya ekle
         for region in riskRegions {
             let circle = MKCircle(center: region.coordinate, radius: region.radius)
             circle.title = String(region.riskValue)

@@ -1,12 +1,41 @@
 import Foundation
-import Combine
 
-class EarthquakeListViewModel: ObservableObject {
-    @Published var earthquakes: [Earthquake] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
+protocol EarthquakeListViewModelDelegate: AnyObject {
+    func didUpdateEarthquakes()
+    func didChangeLoadingState(isLoading: Bool)
+    func didReceiveError(message: String?)
+}
+
+class EarthquakeListViewModel {
+
+    static let earthquakesUpdatedNotification = Notification.Name("viewModelEarthquakesUpdatedNotification")
+    static let loadingStateChangedNotification = Notification.Name("loadingStateChangedNotification")
+    static let errorReceivedNotification = Notification.Name("errorReceivedNotification")
     
-    private var cancellables = Set<AnyCancellable>()
+    private(set) var earthquakes: [Earthquake] = []
+    private(set) var isLoading: Bool = false {
+        didSet {
+            delegate?.didChangeLoadingState(isLoading: isLoading)
+            NotificationCenter.default.post(
+                name: EarthquakeListViewModel.loadingStateChangedNotification,
+                object: self,
+                userInfo: ["isLoading": isLoading]
+            )
+        }
+    }
+    private(set) var errorMessage: String? = nil {
+        didSet {
+            delegate?.didReceiveError(message: errorMessage)
+            NotificationCenter.default.post(
+                name: EarthquakeListViewModel.errorReceivedNotification,
+                object: self,
+                userInfo: ["errorMessage": errorMessage as Any]
+            )
+        }
+    }
+    
+    weak var delegate: EarthquakeListViewModelDelegate?
+    
     private let networkManager = NetworkManager()
     private var allEarthquakes: [Earthquake] = []
     private var currentMinMagnitude: Double = 0.0
@@ -22,14 +51,23 @@ class EarthquakeListViewModel: ObservableObject {
     }
     
     private func setupBindings() {
-        networkManager.$earthquakes
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] earthquakes in
-                self?.allEarthquakes = earthquakes
-                self?.applyFiltersAndSort()
-                self?.isLoading = false
-            }
-            .store(in: &cancellables)
+
+        networkManager.delegate = self
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakesUpdated(_:)),
+            name: NetworkManager.earthquakesUpdatedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleEarthquakesUpdated(_ notification: Notification) {
+        if let earthquakes = notification.userInfo?["earthquakes"] as? [Earthquake] {
+            allEarthquakes = earthquakes
+            applyFiltersAndSort()
+            isLoading = false
+        }
     }
     
     func fetchEarthquakes() {
@@ -38,48 +76,42 @@ class EarthquakeListViewModel: ObservableObject {
         networkManager.loadData()
     }
     
-    // Varsayılan olarak tarihe göre sırala
     func applySortOnLoad() {
         sortByDate()
     }
     
-    // Tarihe göre sırala (en yeni en üstte)
     func sortByDate() {
         currentSortOrder = .date
         applyFiltersAndSort()
     }
     
-    // Büyüklüğe göre sırala (büyükten küçüğe)
     func sortByMagnitude() {
         currentSortOrder = .magnitude
         applyFiltersAndSort()
     }
     
-    // Belirli bir büyüklüğün üzerindeki depremleri filtrele
     func filterByMagnitude(minMagnitude: Double) {
         currentMinMagnitude = minMagnitude
         applyFiltersAndSort()
     }
     
-    // Filtre ve sıralama işlemlerini uygula
     private func applyFiltersAndSort() {
-        // Önce filtreleme işlemi
+
         var filteredEarthquakes = allEarthquakes.filter { earthquake in
             let magnitude = getMagnitudeValue(for: earthquake)
             return magnitude >= currentMinMagnitude
         }
         
-        // Sonra sıralama işlemi
         switch currentSortOrder {
         case .date:
-            // Tarihe göre sırala (en yeni en üstte)
+
             filteredEarthquakes.sort { lhs, rhs in
                 let lhsDate = createDateFromStrings(date: lhs.date, time: lhs.time)
                 let rhsDate = createDateFromStrings(date: rhs.date, time: rhs.time)
                 return lhsDate > rhsDate
             }
         case .magnitude:
-            // Büyüklüğe göre sırala (en büyük en üstte)
+
             filteredEarthquakes.sort { lhs, rhs in
                 let lhsMagnitude = getMagnitudeValue(for: lhs)
                 let rhsMagnitude = getMagnitudeValue(for: rhs)
@@ -87,11 +119,15 @@ class EarthquakeListViewModel: ObservableObject {
             }
         }
         
-        // Sonuçları yayınla
         self.earthquakes = filteredEarthquakes
+        
+        delegate?.didUpdateEarthquakes()
+        NotificationCenter.default.post(
+            name: EarthquakeListViewModel.earthquakesUpdatedNotification,
+            object: self
+        )
     }
     
-    // Deprem büyüklüğünü hesapla (ML, MW veya MD)
     private func getMagnitudeValue(for earthquake: Earthquake) -> Double {
         if let ml = Double(earthquake.ml), ml > 0 {
             return ml
@@ -103,7 +139,6 @@ class EarthquakeListViewModel: ObservableObject {
         return 0.0
     }
     
-    // Tarih ve zaman stringlerinden Date objesi oluştur
     private func createDateFromStrings(date: String, time: String) -> Date {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy.MM.dd HH:mm:ss"
@@ -112,5 +147,18 @@ class EarthquakeListViewModel: ObservableObject {
             return date
         }
         return Date.distantPast
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+
+// MARK: - NetworkManagerDelegate
+extension EarthquakeListViewModel: NetworkManagerDelegate {
+    func didUpdateEarthquakes(_ earthquakes: [Earthquake]) {
+        allEarthquakes = earthquakes
+        applyFiltersAndSort()
+        isLoading = false
     }
 }

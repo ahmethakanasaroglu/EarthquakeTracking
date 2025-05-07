@@ -1,12 +1,10 @@
 import UIKit
 import MapKit
-import Combine
 
 class NotificationSettingsViewController: UIViewController {
     
     // MARK: - Properties
     private let viewModel: PersonalizedViewModel
-    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - UI Elements
     private lazy var scrollView: UIScrollView = {
@@ -183,6 +181,10 @@ class NotificationSettingsViewController: UIViewController {
         updateUI()
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     // MARK: - Setup
     private func setupUI() {
         title = "Uyarı Ayarları"
@@ -293,27 +295,50 @@ class NotificationSettingsViewController: UIViewController {
     }
     
     private func setupBindings() {
-        viewModel.$monitoredLocations
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.locationsTableView.reloadData()
-                self?.updateMapWithLocations()
-            }
-            .store(in: &cancellables)
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleMonitoredLocationsUpdated),
+            name: PersonalizedViewModel.monitoredLocationsChangedNotification,
+            object: nil
+        )
         
-        viewModel.$isAddingMonitoredLocation
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isAdding in
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAddingLocationStateChanged(_:)),
+            name: PersonalizedViewModel.addingLocationStateChangedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEnableNotificationsChanged(_:)),
+            name: PersonalizedViewModel.notificationSettingsChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleMonitoredLocationsUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.locationsTableView.reloadData()
+            self?.updateMapWithLocations()
+        }
+    }
+    
+    @objc private func handleAddingLocationStateChanged(_ notification: Notification) {
+        if let isAdding = notification.userInfo?["isAdding"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 self?.updateAddLocationUI(isAdding: isAdding)
             }
-            .store(in: &cancellables)
-            
-        viewModel.$enableNotifications
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isEnabled in
+        }
+    }
+    
+    @objc private func handleEnableNotificationsChanged(_ notification: Notification) {
+        if let isEnabled = notification.userInfo?["enabled"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 self?.updateUIBasedOnNotificationState(isEnabled: isEnabled)
             }
-            .store(in: &cancellables)
+        }
     }
     
     // MARK: - UI Updates
@@ -404,7 +429,7 @@ class NotificationSettingsViewController: UIViewController {
                 let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
                 mapView.setRegion(region, animated: true)
                 
-                viewModel.newLocationCoordinate = userLocation
+                viewModel.setNewLocationCoordinate(userLocation)
                 
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = userLocation
@@ -417,7 +442,7 @@ class NotificationSettingsViewController: UIViewController {
     // MARK: - Actions
     
     @objc private func notificationSwitchChanged(_ sender: UISwitch) {
-        viewModel.enableNotifications = sender.isOn
+        viewModel.setEnableNotifications(sender.isOn)
         viewModel.saveUserPreferences()
         
         updateUIBasedOnNotificationState(isEnabled: sender.isOn)
@@ -428,20 +453,20 @@ class NotificationSettingsViewController: UIViewController {
     }
     
     @objc private func magnitudeSliderChanged(_ sender: UISlider) {
-        let value = Double(round(sender.value * 10) / 10) // Round to nearest 0.1
-        viewModel.selectedMagnitudeThreshold = value
+        let value = Double(round(sender.value * 10) / 10) 
+        viewModel.setMagnitudeThreshold(value)
         magnitudeValueLabel.text = String(format: "%.1f", value)
         viewModel.saveUserPreferences()
     }
     
     @objc private func addNewLocation() {
-        viewModel.isAddingMonitoredLocation = true
+        viewModel.setIsAddingMonitoredLocation(true)
     }
     
     @objc private func mapTapped(_ gesture: UITapGestureRecognizer) {
         let point = gesture.location(in: mapView)
         let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
-        viewModel.newLocationCoordinate = coordinate
+        viewModel.setNewLocationCoordinate(coordinate)
         
         mapView.removeAnnotations(mapView.annotations)
         let annotation = MKPointAnnotation()
@@ -459,7 +484,7 @@ class NotificationSettingsViewController: UIViewController {
             return
         }
         
-        viewModel.newLocationName = locationNameTextField.text!
+        viewModel.setNewLocationName(locationNameTextField.text!)
         viewModel.addMonitoredLocation()
     }
     

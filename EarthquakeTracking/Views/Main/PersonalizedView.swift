@@ -1,5 +1,4 @@
 import UIKit
-import Combine
 import CoreLocation
 import MapKit
 
@@ -7,7 +6,6 @@ class PersonalizedViewController: UIViewController {
     
     // MARK: - Properties
     private let viewModel = PersonalizedViewModel()
-    private var cancellables = Set<AnyCancellable>()
     private let locationManager = CLLocationManager()
     
     // MARK: - UI Elements
@@ -88,9 +86,12 @@ class PersonalizedViewController: UIViewController {
         setupBindings()
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
         viewModel.loadRiskDataForCurrentLocation()
     }
     
@@ -296,19 +297,22 @@ class PersonalizedViewController: UIViewController {
     
     private func setupBindings() {
 
-        viewModel.$riskLevelForCurrentLocation
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] riskLevel in
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRiskLevelUpdated(_:)),
+            name: PersonalizedViewModel.riskDataChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleRiskLevelUpdated(_ notification: Notification) {
+        if let riskLevel = notification.userInfo?["level"] as? RiskLevel,
+           let isLoading = notification.userInfo?["isLoading"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 self?.riskIndicatorView.updateRiskLevel(riskLevel)
-            }
-            .store(in: &cancellables)
-        
-        viewModel.$isLoadingRiskData
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
                 self?.riskIndicatorView.setLoading(isLoading)
             }
-            .store(in: &cancellables)
+        }
     }
     
     // MARK: - Actions
@@ -338,7 +342,7 @@ extension PersonalizedViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         
-        viewModel.userLocation = location.coordinate
+        viewModel.locationManager(manager, didUpdateLocations: locations)
         
         manager.stopUpdatingLocation()
     }

@@ -1,39 +1,175 @@
 import Foundation
-import Combine
 import CoreLocation
 import UserNotifications
 import UIKit
 
-class PersonalizedViewModel: ObservableObject {
-    @Published var enableNotifications = false
-    @Published var selectedMagnitudeThreshold: Double = 4.0
-    @Published var monitoredLocations: [MonitoredLocation] = []
-    @Published var isAddingMonitoredLocation = false
-    @Published var newLocationName = ""
-    @Published var newLocationCoordinate: CLLocationCoordinate2D?
-    @Published var userLocation: CLLocationCoordinate2D?
+protocol PersonalizedViewModelDelegate: AnyObject {
+    func didUpdateNotificationSettings(enabled: Bool)
+    func didUpdateMagnitudeThreshold(threshold: Double)
+    func didUpdateMonitoredLocations(locations: [MonitoredLocation])
+    func didUpdateAddingLocationState(isAdding: Bool)
+    func didUpdateNewLocation(name: String, coordinate: CLLocationCoordinate2D?)
+    func didUpdateUserLocation(location: CLLocationCoordinate2D?)
+    func didUpdateSimulationSettings(magnitude: Double, isActive: Bool, intensity: Double, effect: SimulationEffect)
+    func didUpdateARScanState(isActive: Bool, step: Int, results: [ScanResult], progress: Float)
+    func didUpdateRiskData(level: RiskLevel, isLoading: Bool, coordinates: [CLLocationCoordinate2D])
+}
+
+class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
+
+    static let notificationSettingsChangedNotification = Notification.Name("notificationSettingsChangedNotification")
+    static let magnitudeThresholdChangedNotification = Notification.Name("magnitudeThresholdChangedNotification")
+    static let monitoredLocationsChangedNotification = Notification.Name("monitoredLocationsChangedNotification")
+    static let addingLocationStateChangedNotification = Notification.Name("addingLocationStateChangedNotification")
+    static let newLocationChangedNotification = Notification.Name("newLocationChangedNotification")
+    static let userLocationChangedNotification = Notification.Name("userLocationChangedNotification")
+    static let simulationSettingsChangedNotification = Notification.Name("simulationSettingsChangedNotification")
+    static let arScanStateChangedNotification = Notification.Name("arScanStateChangedNotification")
+    static let riskDataChangedNotification = Notification.Name("riskDataChangedNotification")
     
-    @Published var selectedSimulationMagnitude: Double = 5.0
-    @Published var isSimulationActive = false
-    @Published var simulationIntensity: Double = 0.0
-    @Published var simulationEffect: SimulationEffect = .light
+    private(set) var enableNotifications = false {
+        didSet {
+            delegate?.didUpdateNotificationSettings(enabled: enableNotifications)
+            NotificationCenter.default.post(
+                name: PersonalizedViewModel.notificationSettingsChangedNotification,
+                object: self,
+                userInfo: ["enabled": enableNotifications]
+            )
+        }
+    }
     
-    @Published var isARScanActive = false
-    @Published var currentScanStep = 0
-    @Published var scanResults: [ScanResult] = []
-    @Published var scanProgress: Float = 0.0
+    private(set) var selectedMagnitudeThreshold: Double = 4.0 {
+        didSet {
+            delegate?.didUpdateMagnitudeThreshold(threshold: selectedMagnitudeThreshold)
+            NotificationCenter.default.post(
+                name: PersonalizedViewModel.magnitudeThresholdChangedNotification,
+                object: self,
+                userInfo: ["threshold": selectedMagnitudeThreshold]
+            )
+        }
+    }
     
-    @Published var riskLevelForCurrentLocation: RiskLevel = .unknown
-    @Published var isLoadingRiskData = false
-    @Published var riskAreaCoordinates: [CLLocationCoordinate2D] = []
+    private(set) var monitoredLocations: [MonitoredLocation] = [] {
+        didSet {
+            delegate?.didUpdateMonitoredLocations(locations: monitoredLocations)
+            NotificationCenter.default.post(
+                name: PersonalizedViewModel.monitoredLocationsChangedNotification,
+                object: self,
+                userInfo: ["locations": monitoredLocations]
+            )
+        }
+    }
+    
+    private(set) var isAddingMonitoredLocation = false {
+        didSet {
+            delegate?.didUpdateAddingLocationState(isAdding: isAddingMonitoredLocation)
+            NotificationCenter.default.post(
+                name: PersonalizedViewModel.addingLocationStateChangedNotification,
+                object: self,
+                userInfo: ["isAdding": isAddingMonitoredLocation]
+            )
+        }
+    }
+    
+    private(set) var newLocationName = "" {
+        didSet {
+            updateNewLocation()
+        }
+    }
+    
+    private(set) var newLocationCoordinate: CLLocationCoordinate2D? {
+        didSet {
+            updateNewLocation()
+        }
+    }
+    
+    private(set) var userLocation: CLLocationCoordinate2D? {
+        didSet {
+            delegate?.didUpdateUserLocation(location: userLocation)
+            NotificationCenter.default.post(
+                name: PersonalizedViewModel.userLocationChangedNotification,
+                object: self,
+                userInfo: ["location": userLocation as Any]
+            )
+        }
+    }
+    
+    private(set) var selectedSimulationMagnitude: Double = 5.0 {
+        didSet {
+            updateSimulationSettings()
+        }
+    }
+    
+    private(set) var isSimulationActive = false {
+        didSet {
+            updateSimulationSettings()
+        }
+    }
+    
+    private(set) var simulationIntensity: Double = 0.0 {
+        didSet {
+            updateSimulationSettings()
+        }
+    }
+    
+    private(set) var simulationEffect: SimulationEffect = .light {
+        didSet {
+            updateSimulationSettings()
+        }
+    }
+    
+    private(set) var isARScanActive = false {
+        didSet {
+            updateARScanState()
+        }
+    }
+    
+    private(set) var currentScanStep = 0 {
+        didSet {
+            updateARScanState()
+        }
+    }
+    
+    private(set) var scanResults: [ScanResult] = [] {
+        didSet {
+            updateARScanState()
+        }
+    }
+    
+    private(set) var scanProgress: Float = 0.0 {
+        didSet {
+            updateARScanState()
+        }
+    }
+    
+    private(set) var riskLevelForCurrentLocation: RiskLevel = .unknown {
+        didSet {
+            updateRiskData()
+        }
+    }
+    
+    private(set) var isLoadingRiskData = false {
+        didSet {
+            updateRiskData()
+        }
+    }
+    
+    private(set) var riskAreaCoordinates: [CLLocationCoordinate2D] = [] {
+        didSet {
+            updateRiskData()
+        }
+    }
     
     private var cachedRiskLevels: [String: RiskLevel] = [:]
     private var hasLoadedRiskData = false
     
     private var locationManager = CLLocationManager()
-    private var cancellables = Set<AnyCancellable>()
+    private var simulationTimer: Timer?
     
-    init() {
+    weak var delegate: PersonalizedViewModelDelegate?
+    
+    override init() {
+        super.init()
         setupLocationManager()
         loadUserPreferences()
         requestNotificationAuthorization()
@@ -48,10 +184,77 @@ class PersonalizedViewModel: ObservableObject {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        simulationTimer?.invalidate()
+    }
+    
+    private func updateNewLocation() {
+        delegate?.didUpdateNewLocation(name: newLocationName, coordinate: newLocationCoordinate)
+        NotificationCenter.default.post(
+            name: PersonalizedViewModel.newLocationChangedNotification,
+            object: self,
+            userInfo: [
+                "name": newLocationName,
+                "coordinate": newLocationCoordinate as Any
+            ]
+        )
+    }
+    
+    private func updateSimulationSettings() {
+        delegate?.didUpdateSimulationSettings(
+            magnitude: selectedSimulationMagnitude,
+            isActive: isSimulationActive,
+            intensity: simulationIntensity,
+            effect: simulationEffect
+        )
+        NotificationCenter.default.post(
+            name: PersonalizedViewModel.simulationSettingsChangedNotification,
+            object: self,
+            userInfo: [
+                "magnitude": selectedSimulationMagnitude,
+                "isActive": isSimulationActive,
+                "intensity": simulationIntensity,
+                "effect": simulationEffect
+            ]
+        )
+    }
+    
+    private func updateARScanState() {
+        delegate?.didUpdateARScanState(
+            isActive: isARScanActive,
+            step: currentScanStep,
+            results: scanResults,
+            progress: scanProgress
+        )
+        NotificationCenter.default.post(
+            name: PersonalizedViewModel.arScanStateChangedNotification,
+            object: self,
+            userInfo: [
+                "isActive": isARScanActive,
+                "step": currentScanStep,
+                "results": scanResults,
+                "progress": scanProgress
+            ]
+        )
+    }
+    
+    private func updateRiskData() {
+        delegate?.didUpdateRiskData(
+            level: riskLevelForCurrentLocation,
+            isLoading: isLoadingRiskData,
+            coordinates: riskAreaCoordinates
+        )
+        NotificationCenter.default.post(
+            name: PersonalizedViewModel.riskDataChangedNotification,
+            object: self,
+            userInfo: [
+                "level": riskLevelForCurrentLocation,
+                "isLoading": isLoadingRiskData,
+                "coordinates": riskAreaCoordinates
+            ]
+        )
     }
     
     @objc private func clearCachedData() {
-
         cachedRiskLevels.removeAll()
         hasLoadedRiskData = false
     }
@@ -61,9 +264,15 @@ class PersonalizedViewModel: ObservableObject {
     private func setupLocationManager() {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.distanceFilter = 100
-        locationManager.delegate = nil
+        locationManager.delegate = self
         
         userLocation = CLLocationCoordinate2D(latitude: 39.9334, longitude: 32.8597)
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let location = locations.last {
+            userLocation = location.coordinate
+        }
     }
     
     private func loadUserPreferences() {
@@ -95,6 +304,16 @@ class PersonalizedViewModel: ObservableObject {
     
     // MARK: - Kişiselleştirilmiş Uyarı Sistemi
     
+    func setEnableNotifications(_ enable: Bool) {
+        enableNotifications = enable
+        saveUserPreferences()
+    }
+    
+    func setMagnitudeThreshold(_ threshold: Double) {
+        selectedMagnitudeThreshold = threshold
+        saveUserPreferences()
+    }
+    
     func requestNotificationAuthorization() {
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
@@ -107,6 +326,18 @@ class PersonalizedViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func setIsAddingMonitoredLocation(_ isAdding: Bool) {
+        isAddingMonitoredLocation = isAdding
+    }
+    
+    func setNewLocationName(_ name: String) {
+        newLocationName = name
+    }
+    
+    func setNewLocationCoordinate(_ coordinate: CLLocationCoordinate2D?) {
+        newLocationCoordinate = coordinate
     }
     
     func addMonitoredLocation() {
@@ -142,6 +373,10 @@ class PersonalizedViewModel: ObservableObject {
     
     // MARK: - Deprem Simülasyonu
     
+    func setSimulationMagnitude(_ magnitude: Double) {
+        selectedSimulationMagnitude = magnitude
+    }
+    
     func startSimulation() {
         isSimulationActive = true
         simulateEarthquake()
@@ -150,10 +385,11 @@ class PersonalizedViewModel: ObservableObject {
     func stopSimulation() {
         isSimulationActive = false
         simulationIntensity = 0.0
+        simulationTimer?.invalidate()
+        simulationTimer = nil
     }
     
     private func simulateEarthquake() {
-        
         let simulationDuration = 15.0
         let startTime = Date()
         
@@ -169,29 +405,30 @@ class PersonalizedViewModel: ObservableObject {
             simulationEffect = .light
         }
         
-        Timer.publish(every: 0.1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self, self.isSimulationActive else { return }
-                
-                let elapsedTime = Date().timeIntervalSince(startTime)
-                if elapsedTime > simulationDuration {
-                    self.stopSimulation()
-                    return
-                }
-                
-                let baseFrequency = 0.5 + (self.selectedSimulationMagnitude - 3.0) * 0.3
-                let progress = elapsedTime / simulationDuration
-                
-                let sinValue = sin(elapsedTime * baseFrequency * 2 * .pi)
-                
-                let randomNoise = Double.random(in: -0.3...0.3)
-                
-                let timeDecay = 1.0 - pow(progress, 2)
-                
-                self.simulationIntensity = (sinValue + randomNoise) * maxIntensity * timeDecay
+        simulationTimer?.invalidate()
+        simulationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self = self, self.isSimulationActive else {
+                timer.invalidate()
+                return
             }
-            .store(in: &cancellables)
+            
+            let elapsedTime = Date().timeIntervalSince(startTime)
+            if elapsedTime > simulationDuration {
+                self.stopSimulation()
+                return
+            }
+            
+            let baseFrequency = 0.5 + (self.selectedSimulationMagnitude - 3.0) * 0.3
+            let progress = elapsedTime / simulationDuration
+            
+            let sinValue = sin(elapsedTime * baseFrequency * 2 * .pi)
+            
+            let randomNoise = Double.random(in: -0.3...0.3)
+            
+            let timeDecay = 1.0 - pow(progress, 2)
+            
+            self.simulationIntensity = (sinValue + randomNoise) * maxIntensity * timeDecay
+        }
     }
     
     // MARK: - AR Ev Güvenliği Taraması
@@ -295,7 +532,6 @@ class PersonalizedViewModel: ObservableObject {
         var randomGenerator = SeededRandomGenerator(seed: seed)
         
         for _ in 0..<pointCount {
-
             let randomLat = randomGenerator.nextDouble() * radiusInDegrees * 2 - radiusInDegrees
             let randomLon = randomGenerator.nextDouble() * radiusInDegrees * 2 - radiusInDegrees
             
@@ -387,7 +623,7 @@ struct SeededRandomGenerator {
     }
     
     mutating func nextDouble() -> Double {
-        // Basit bir linear congruential üreteci
+
         seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
         return Double(seed) / Double(0x7FFFFFFF)
     }

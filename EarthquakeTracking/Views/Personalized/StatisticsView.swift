@@ -1,11 +1,9 @@
 import UIKit
-import Combine
 
 class StatisticsViewController: UIViewController {
     
     // MARK: - Properties
     private var earthquakeViewModel = EarthquakeListViewModel()
-    private var cancellables = Set<AnyCancellable>()
     
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -63,6 +61,10 @@ class StatisticsViewController: UIViewController {
         setupUI()
         setupBindings()
         fetchEarthquakeData()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup Methods
@@ -270,35 +272,59 @@ class StatisticsViewController: UIViewController {
     }
     
     private func setupBindings() {
-        earthquakeViewModel.$earthquakes
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] earthquakes in
-                guard let self = self, !earthquakes.isEmpty else { return }
-                self.processEarthquakeData(earthquakes)
-                self.createSummaryStats()
-                self.createCharts()
-                self.activityIndicator.stopAnimating()
-            }
-            .store(in: &cancellables)
+
+        earthquakeViewModel.delegate = self
         
-        earthquakeViewModel.$isLoading
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakesUpdated),
+            name: EarthquakeListViewModel.earthquakesUpdatedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLoadingStateChanged(_:)),
+            name: EarthquakeListViewModel.loadingStateChangedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleErrorReceived(_:)),
+            name: EarthquakeListViewModel.errorReceivedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleEarthquakesUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, !self.earthquakeViewModel.earthquakes.isEmpty else { return }
+            self.processEarthquakeData(self.earthquakeViewModel.earthquakes)
+            self.createSummaryStats()
+            self.createCharts()
+            self.activityIndicator.stopAnimating()
+        }
+    }
+    
+    @objc private func handleLoadingStateChanged(_ notification: Notification) {
+        if let isLoading = notification.userInfo?["isLoading"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 if isLoading {
                     self?.activityIndicator.startAnimating()
                 } else {
                     self?.activityIndicator.stopAnimating()
                 }
             }
-            .store(in: &cancellables)
-        
-        earthquakeViewModel.$errorMessage
-            .receive(on: DispatchQueue.main)
-            .compactMap { $0 }
-            .sink { [weak self] message in
-                self?.showError(message: message)
+        }
+    }
+    
+    @objc private func handleErrorReceived(_ notification: Notification) {
+        if let errorMessage = notification.userInfo?["errorMessage"] as? String {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
             }
-            .store(in: &cancellables)
+        }
     }
     
     private func fetchEarthquakeData() {
@@ -307,7 +333,7 @@ class StatisticsViewController: UIViewController {
     
     // MARK: - Data Processing
     private func processEarthquakeData(_ earthquakes: [Earthquake]) {
-
+        
         totalEarthquakes = earthquakes.count
         var regionCounts: [String: Int] = [:]
         var magnitudeCounts: [String: Int] = [:]
@@ -317,7 +343,7 @@ class StatisticsViewController: UIViewController {
         var totalDepth: Double = 0
         
         for earthquake in earthquakes {
-
+            
             let locationComponents = earthquake.location.components(separatedBy: "-")
             let region = locationComponents.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Diğer"
             regionCounts[region, default: 0] += 1
@@ -420,7 +446,7 @@ class StatisticsViewController: UIViewController {
     
     // MARK: - Summary Statistics
     private func createSummaryStats() {
-
+        
         summaryStatsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         let totalQuakesView = createStatView(title: "Toplam Deprem", value: "\(totalEarthquakes)")
@@ -484,7 +510,7 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createRegionBarChart() {
-
+        
         regionChartView.subviews.forEach { $0.removeFromSuperview() }
         
         let stackView = UIStackView()
@@ -509,7 +535,7 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createMagnitudePieChart() {
-
+        
         magnitudeChartView.subviews.forEach { $0.removeFromSuperview() }
         
         let legendStackView = UIStackView()
@@ -529,7 +555,7 @@ class StatisticsViewController: UIViewController {
         
         let colors = [
             UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0), // 0-1.9: Yeşil
-            UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0), // 2-2.9: Lime yeşil
+            UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0), // 2-2.9: Lime yeş
             UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0), // 3-3.9: Sarı
             UIColor(red: 0.9, green: 0.6, blue: 0.0, alpha: 1.0), // 4-4.9: Turuncu
             UIColor(red: 1.0, green: 0.4, blue: 0.0, alpha: 1.0), // 5-5.9: Koyu turuncu
@@ -566,11 +592,11 @@ class StatisticsViewController: UIViewController {
                 segmentView.backgroundColor = colors[index]
                 
                 if index == 0 {
-
+                    
                     segmentView.layer.cornerRadius = 8
                     segmentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMinXMaxYCorner]
                 } else if index == colors.count - 1 || index == magnitudeDistributionData.count - 1 {
-
+                    
                     segmentView.layer.cornerRadius = 8
                     segmentView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner]
                 }
@@ -582,7 +608,7 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createDepthBarChart() {
-
+        
         depthChartView.subviews.forEach { $0.removeFromSuperview() }
         
         let stackView = UIStackView()
@@ -609,7 +635,7 @@ class StatisticsViewController: UIViewController {
     }
     
     private func createTimelineChart() {
-
+        
         timelineChartView.subviews.forEach { $0.removeFromSuperview() }
         
         let timelineStackView = UIStackView()
@@ -756,7 +782,7 @@ class StatisticsViewController: UIViewController {
         let fillWidth = value > 0 ? CGFloat(value) / CGFloat(maxValue) : 0.01
         
         if fillWidth < 0.15 {
-
+            
             barView.addSubview(valueBackground)
             valueBackground.addSubview(valueLabel)
             
@@ -772,7 +798,7 @@ class StatisticsViewController: UIViewController {
                 valueLabel.bottomAnchor.constraint(equalTo: valueBackground.bottomAnchor)
             ])
         } else {
-
+            
             barFillView.addSubview(valueLabel)
             
             NSLayoutConstraint.activate([
@@ -851,5 +877,36 @@ class StatisticsViewController: UIViewController {
         let okAction = UIAlertAction(title: "Tamam", style: .default)
         alertController.addAction(okAction)
         present(alertController, animated: true)
+    }
+}
+
+// MARK: - EarthquakeListViewModelDelegate
+extension StatisticsViewController: EarthquakeListViewModelDelegate {
+    func didUpdateEarthquakes() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, !self.earthquakeViewModel.earthquakes.isEmpty else { return }
+            self.processEarthquakeData(self.earthquakeViewModel.earthquakes)
+            self.createSummaryStats()
+            self.createCharts()
+            self.activityIndicator.stopAnimating()
+        }
+    }
+    
+    func didChangeLoadingState(isLoading: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            if isLoading {
+                self?.activityIndicator.startAnimating()
+            } else {
+                self?.activityIndicator.stopAnimating()
+            }
+        }
+    }
+    
+    func didReceiveError(message: String?) {
+        if let errorMessage = message {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
+            }
+        }
     }
 }

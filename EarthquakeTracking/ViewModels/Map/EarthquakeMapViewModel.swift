@@ -1,15 +1,55 @@
 import Foundation
 import MapKit
-import Combine
 
-class EarthquakeMapViewModel: ObservableObject {
-    @Published var earthquakes: [Earthquake] = []
-    @Published var selectedEarthquake: Earthquake?
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
-    @Published var minMagnitudeFilter: Double = 0.0
+protocol EarthquakeMapViewModelDelegate: AnyObject {
+    func didUpdateEarthquakes()
+    func didSelectEarthquake(_ earthquake: Earthquake?)
+    func didChangeLoadingState(isLoading: Bool)
+    func didReceiveError(message: String?)
+}
+
+class EarthquakeMapViewModel {
+
+    static let earthquakesUpdatedNotification = Notification.Name("mapViewModelEarthquakesUpdatedNotification")
+    static let earthquakeSelectedNotification = Notification.Name("earthquakeSelectedNotification")
+    static let loadingStateChangedNotification = Notification.Name("mapLoadingStateChangedNotification")
+    static let errorReceivedNotification = Notification.Name("mapErrorReceivedNotification")
     
-    private var cancellables = Set<AnyCancellable>()
+    private(set) var earthquakes: [Earthquake] = []
+    private(set) var selectedEarthquake: Earthquake? {
+        didSet {
+            delegate?.didSelectEarthquake(selectedEarthquake)
+            NotificationCenter.default.post(
+                name: EarthquakeMapViewModel.earthquakeSelectedNotification,
+                object: self,
+                userInfo: ["selectedEarthquake": selectedEarthquake as Any]
+            )
+        }
+    }
+    private(set) var isLoading: Bool = false {
+        didSet {
+            delegate?.didChangeLoadingState(isLoading: isLoading)
+            NotificationCenter.default.post(
+                name: EarthquakeMapViewModel.loadingStateChangedNotification,
+                object: self,
+                userInfo: ["isLoading": isLoading]
+            )
+        }
+    }
+    private(set) var errorMessage: String? = nil {
+        didSet {
+            delegate?.didReceiveError(message: errorMessage)
+            NotificationCenter.default.post(
+                name: EarthquakeMapViewModel.errorReceivedNotification,
+                object: self,
+                userInfo: ["errorMessage": errorMessage as Any]
+            )
+        }
+    }
+    private(set) var minMagnitudeFilter: Double = 0.0
+    
+    weak var delegate: EarthquakeMapViewModelDelegate?
+    
     private let networkManager = NetworkManager()
     private var allEarthquakes: [Earthquake] = []
     
@@ -18,14 +58,23 @@ class EarthquakeMapViewModel: ObservableObject {
     }
     
     private func setupBindings() {
-        networkManager.$earthquakes
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] earthquakes in
-                self?.allEarthquakes = earthquakes
-                self?.applyFilters()
-                self?.isLoading = false
-            }
-            .store(in: &cancellables)
+
+        networkManager.delegate = self
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakesUpdated(_:)),
+            name: NetworkManager.earthquakesUpdatedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleEarthquakesUpdated(_ notification: Notification) {
+        if let earthquakes = notification.userInfo?["earthquakes"] as? [Earthquake] {
+            allEarthquakes = earthquakes
+            applyFilters()
+            isLoading = false
+        }
     }
     
     func fetchEarthquakes() {
@@ -127,7 +176,7 @@ class EarthquakeMapViewModel: ObservableObject {
             return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         }
         
-        return CLLocationCoordinate2D(latitude: 39.0, longitude: 35.0) // Türkiye'nin yaklaşık merkezi
+        return CLLocationCoordinate2D(latitude: 39.0, longitude: 35.0)
     }
     
     func getInitialSpan() -> MKCoordinateSpan {
@@ -161,11 +210,34 @@ class EarthquakeMapViewModel: ObservableObject {
         applyFilters()
     }
     
+    func clearSelectedEarthquake() {
+        selectedEarthquake = nil
+    }
+    
     private func applyFilters() {
         earthquakes = allEarthquakes.filter { earthquake in
             let magnitude = getMagnitude(for: earthquake)
             return magnitude >= minMagnitudeFilter
         }
+        
+        delegate?.didUpdateEarthquakes()
+        NotificationCenter.default.post(
+            name: EarthquakeMapViewModel.earthquakesUpdatedNotification,
+            object: self
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+
+// MARK: - NetworkManagerDelegate
+extension EarthquakeMapViewModel: NetworkManagerDelegate {
+    func didUpdateEarthquakes(_ earthquakes: [Earthquake]) {
+        allEarthquakes = earthquakes
+        applyFilters()
+        isLoading = false
     }
 }
 

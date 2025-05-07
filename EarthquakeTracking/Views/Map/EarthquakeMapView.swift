@@ -1,11 +1,9 @@
 import UIKit
 import MapKit
-import Combine
 
 class EarthquakeMapViewController: UIViewController {
     
     private let viewModel = EarthquakeMapViewModel()
-    private var cancellables = Set<AnyCancellable>()
     
     private var tapGestureRecognizer: UITapGestureRecognizer!
     
@@ -149,7 +147,6 @@ class EarthquakeMapViewController: UIViewController {
         return button
     }()
     
-    // Popup'ın mevcut annotation konumuna göre pozisyonlaması için constraint'ler
     private var popupBottomConstraint: NSLayoutConstraint?
     private var popupCenterXConstraint: NSLayoutConstraint?
     private var selectedAnnotationView: MKAnnotationView?
@@ -162,16 +159,18 @@ class EarthquakeMapViewController: UIViewController {
         fetchEarthquakes()
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     func focusOnLocation(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
         if viewModel.earthquakes.isEmpty {
             viewModel.fetchEarthquakes()
             
-            // Daha uzun bir bekleme süresi ekleyelim ve annotation'ların eklenmesinden emin olalım
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 self?.performFocusOnEarthquake(coordinate, earthquake: earthquake)
             }
         } else {
-            // Burada da kısa bir gecikme ekleyelim, haritanın hazır olmasını beklemek için
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 self?.performFocusOnEarthquake(coordinate, earthquake: earthquake)
             }
@@ -179,11 +178,10 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func performFocusOnEarthquake(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
-        // Daha yakın zoom seviyesi kullanalım
+
         let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
         mapView.setRegion(region, animated: true)
         
-        // Annotation'u bulmaya çalış
         var targetAnnotation: EarthquakeAnnotation? = nil
         
         for annotation in mapView.annotations {
@@ -196,27 +194,25 @@ class EarthquakeMapViewController: UIViewController {
             }
         }
         
-        // Eğer annotation bulunamazsa manuel olarak oluşturalım ve ekleyelim
         if targetAnnotation == nil {
             targetAnnotation = EarthquakeAnnotation(coordinate: coordinate, earthquake: earthquake)
             mapView.addAnnotation(targetAnnotation!)
         }
         
-        // Annotation'u seçelim ve popup'ı gösterelim
         if let annotation = targetAnnotation {
             resetAllAnnotations()
             
-            // viewModel'deki selectedEarthquake değerini güncelle
-            viewModel.selectedEarthquake = earthquake
+            NotificationCenter.default.post(
+                name: Notification.Name("clearSelectedEarthquakeNotification"),
+                object: self
+            )
             annotation.isSelected = true
             
-            // Annotation view'ı al veya bekle ve sonra highlight et
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 if let annotationView = self?.mapView.view(for: annotation) {
                     self?.highlightSelectedAnnotation(annotationView)
                     self?.selectedAnnotationView = annotationView
                     
-                    // Popup'ı göster
                     if let earthquake = self?.viewModel.selectedEarthquake {
                         self?.updatePopupView(with: earthquake)
                     }
@@ -234,10 +230,8 @@ class EarthquakeMapViewController: UIViewController {
                 view.markerTintColor = viewModel.getColor(for: earthquakeAnnotation.earthquake)
                 view.layer.zPosition = 0
                 
-                // Gölge ve parıltı efektlerini kaldır
                 view.layer.shadowOpacity = 0
                 
-                // Glyphleri normal hale getir
                 let magnitude = viewModel.getMagnitude(for: earthquakeAnnotation.earthquake)
                 if magnitude >= 5.0 {
                     view.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
@@ -276,15 +270,13 @@ class EarthquakeMapViewController: UIViewController {
         }
     }
     
-    // Seçilen annotation için daha belirgin bir vurgulama
     private func highlightSelectedAnnotation(_ view: MKAnnotationView) {
-        // Seçilen annotation'u belirgin şekilde vurgula
+
         UIView.animate(withDuration: 0.3) {
-            // Daha büyük ve belirgin yap
+
             view.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
         }
         
-        // Dikkat çekici pulse animasyonu ekle
         let pulseAnimation = CABasicAnimation(keyPath: "transform.scale")
         pulseAnimation.duration = 0.8
         pulseAnimation.fromValue = 1.8
@@ -294,19 +286,15 @@ class EarthquakeMapViewController: UIViewController {
         pulseAnimation.repeatCount = 3
         view.layer.add(pulseAnimation, forKey: "pulse")
         
-        // En üstte göster
         view.layer.zPosition = 1000
         
-        // Marker'ı daha görünür yap
         if let markerView = view as? MKMarkerAnnotationView {
-            // Glyph'i değiştir ve daha belirgin yap
+
             markerView.glyphImage = UIImage(systemName: "target")
             markerView.glyphTintColor = .white
             
-            // Özel bir renk ata - normal renklerden farklı olsun
             markerView.markerTintColor = UIColor.systemPurple
             
-            // Glow efekti ekle
             markerView.layer.shadowColor = UIColor.white.cgColor
             markerView.layer.shadowOpacity = 1.0
             markerView.layer.shadowRadius = 8
@@ -321,20 +309,18 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     @objc private func handleMapTap(_ gestureRecognizer: UITapGestureRecognizer) {
-        // Boş bir alana dokunulduğunda popup'ı kapat
+
         let touchPoint = gestureRecognizer.location(in: mapView)
         let touchCoordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
         
-        // Dokunulan noktada bir annotation var mı kontrol et
         let touchedAnnotations = mapView.annotations.filter { annotation in
             guard let annotationView = mapView.view(for: annotation) else { return false }
             let annotationPoint = mapView.convert(annotation.coordinate, toPointTo: mapView)
-            // 30 piksel çapında bir alan içinde dokunuş olup olmadığını kontrol et
+
             let distance = sqrt(pow(touchPoint.x - annotationPoint.x, 2) + pow(touchPoint.y - annotationPoint.y, 2))
-            return distance < 30 // 30 piksel yarıçaplı bir alanda dokunuş varsa
+            return distance < 30
         }
         
-        // Eğer bir annotation'a dokunulmadıysa ve popup açıksa kapat
         if touchedAnnotations.isEmpty && !popupView.isHidden {
             closePopup()
         }
@@ -384,11 +370,9 @@ class EarthquakeMapViewController: UIViewController {
             filterButton.heightAnchor.constraint(equalToConstant: 40),
         ])
         
-        // Popup view constraint'leri - bunları dinamik olarak ayarlayacağız
         popupView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(popupView)
         
-        // Başlangıçta legendView'ın üzerine ve ekranın ortasına yerleştir
         popupBottomConstraint = popupView.bottomAnchor.constraint(equalTo: legendView.topAnchor, constant: -16)
         popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         
@@ -436,40 +420,71 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func setupBindings() {
-        viewModel.$earthquakes
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] earthquakes in
-                self?.updateMapAnnotations()
-                self?.closePopup() // Harita yenilendiğinde popup'ı kapat
-            }
-            .store(in: &cancellables)
+
+        viewModel.delegate = self
         
-        viewModel.$isLoading
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isLoading in
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakesUpdated),
+            name: EarthquakeMapViewModel.earthquakesUpdatedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLoadingStateChanged(_:)),
+            name: EarthquakeMapViewModel.loadingStateChangedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleEarthquakeSelected(_:)),
+            name: EarthquakeMapViewModel.earthquakeSelectedNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleErrorReceived(_:)),
+            name: EarthquakeMapViewModel.errorReceivedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleEarthquakesUpdated() {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateMapAnnotations()
+            self?.closePopup()
+        }
+    }
+    
+    @objc private func handleLoadingStateChanged(_ notification: Notification) {
+        if let isLoading = notification.userInfo?["isLoading"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
                 if isLoading {
                     self?.activityIndicator.startAnimating()
                 } else {
                     self?.activityIndicator.stopAnimating()
                 }
             }
-            .store(in: &cancellables)
-        
-        viewModel.$selectedEarthquake
-            .receive(on: DispatchQueue.main)
-            .compactMap { $0 }
-            .sink { [weak self] earthquake in
+        }
+    }
+    
+    @objc private func handleEarthquakeSelected(_ notification: Notification) {
+        if let earthquake = notification.userInfo?["selectedEarthquake"] as? Earthquake {
+            DispatchQueue.main.async { [weak self] in
                 self?.updatePopupView(with: earthquake)
             }
-            .store(in: &cancellables)
-        
-        viewModel.$errorMessage
-            .receive(on: DispatchQueue.main)
-            .compactMap { $0 }
-            .sink { [weak self] message in
-                self?.showError(message: message)
+        }
+    }
+    
+    @objc private func handleErrorReceived(_ notification: Notification) {
+        if let errorMessage = notification.userInfo?["errorMessage"] as? String {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
             }
-            .store(in: &cancellables)
+        }
     }
     
     private func fetchEarthquakes() {
@@ -477,15 +492,13 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func updateMapAnnotations() {
-        // Kullanıcı konumu dışında tüm annotation'ları kaldır
+
         let existingAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
         mapView.removeAnnotations(existingAnnotations)
         
-        // Yeni annotation'ları ekle
         let annotations = viewModel.getAnnotations()
         mapView.addAnnotations(annotations)
         
-        // Haritayı uygun bölgeye odakla
         if let centerCoordinate = viewModel.getCenterCoordinate() {
             let span = viewModel.getInitialSpan()
             let region = MKCoordinateRegion(center: centerCoordinate, span: span)
@@ -520,7 +533,6 @@ class EarthquakeMapViewController: UIViewController {
         
         coordinatesInfoView.setValue("\(earthquake.latitude.prefix(6)), \(earthquake.longitude.prefix(6))")
         
-        // Seçili annotation'a göre popup'ı konumlandır
         if let selectedView = selectedAnnotationView {
             positionPopupRelativeToAnnotation(selectedView)
         }
@@ -529,44 +541,35 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func positionPopupRelativeToAnnotation(_ annotationView: MKAnnotationView) {
-        // Popup'ı annotation'ın üzerinde gösterme
+
         let annotationPoint = mapView.convert(annotationView.annotation!.coordinate, toPointTo: view)
         
-        // Annotation view'ın boyutunu hesaba katarak popup'ı annotation'ın üstüne yerleştir
-        let annotationHeight = annotationView.frame.height * annotationView.transform.a // transform.a = scaleX
+        let annotationHeight = annotationView.frame.height * annotationView.transform.a
         
-        // Popup'ın alt kenarını annotation'ın tepesine yerleştir
         popupBottomConstraint?.isActive = false
         popupBottomConstraint = popupView.bottomAnchor.constraint(equalTo: view.topAnchor, constant: annotationPoint.y - annotationHeight)
         popupBottomConstraint?.isActive = true
         
-        // Ekranın sol ve sağ kenarlarına göre pozisyonu ayarla
-        // Eğer annotation ekranın sol tarafındaysa, popup'ı sağa kaydır
-        // Eğer annotation ekranın sağ tarafındaysa, popup'ı sola kaydır
         popupCenterXConstraint?.isActive = false
         
         let screenWidth = view.frame.width
         let screenCenter = screenWidth / 2
         
         if annotationPoint.x < screenCenter - 50 {
-            // Annotation sol tarafta, popup'ı sağa kaydır
             popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 50)
         } else if annotationPoint.x > screenCenter + 50 {
-            // Annotation sağ tarafta, popup'ı sola kaydır
             popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -50)
         } else {
-            // Annotation ortada, popup'ı ortada göster
             popupCenterXConstraint = popupView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         }
         
         popupCenterXConstraint?.isActive = true
         
-        // Popup'ın legendView ile çakışmamasını sağla
         let legendViewTop = legendView.frame.minY
-        let estimatedPopupHeight = 200 // Popup'ın tahmini yüksekliği
+        let estimatedPopupHeight = 200
         
         if let constraint = popupBottomConstraint, constraint.constant + CGFloat(estimatedPopupHeight) > legendViewTop {
-            // Popup legendView ile çakışacak, pozisyonu ayarla
+
             popupBottomConstraint?.constant = legendViewTop - CGFloat(estimatedPopupHeight) - 20
         }
         
@@ -585,7 +588,7 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     @objc private func refreshData() {
-        closePopup() // Yenilemeden önce popup'ı kapat
+        closePopup()
         fetchEarthquakes()
     }
     
@@ -596,7 +599,7 @@ class EarthquakeMapViewController: UIViewController {
         } completion: { _ in
             self.popupView.isHidden = true
             // Seçili annotation'ı sıfırla
-            self.viewModel.selectedEarthquake = nil
+            self.viewModel.clearSelectedEarthquake()
             self.selectedAnnotationView = nil
             self.resetAllAnnotations()
         }
@@ -662,7 +665,6 @@ class EarthquakeMapViewController: UIViewController {
         
         let cancelAction = UIAlertAction(title: "İptal", style: .cancel)
         
-        // Add icons to the actions
         allAction.setValue(UIImage(systemName: "list.bullet"), forKey: "image")
         magnitude2Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
         magnitude3Action.setValue(UIImage(systemName: "circle.fill"), forKey: "image")
@@ -696,6 +698,42 @@ class EarthquakeMapViewController: UIViewController {
         let okAction = UIAlertAction(title: "Tamam", style: .default)
         alertController.addAction(okAction)
         present(alertController, animated: true)
+    }
+}
+
+// MARK: - EarthquakeMapViewModelDelegate
+extension EarthquakeMapViewController: EarthquakeMapViewModelDelegate {
+    func didUpdateEarthquakes() {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateMapAnnotations()
+            self?.closePopup()
+        }
+    }
+    
+    func didSelectEarthquake(_ earthquake: Earthquake?) {
+        if let earthquake = earthquake {
+            DispatchQueue.main.async { [weak self] in
+                self?.updatePopupView(with: earthquake)
+            }
+        }
+    }
+    
+    func didChangeLoadingState(isLoading: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            if isLoading {
+                self?.activityIndicator.startAnimating()
+            } else {
+                self?.activityIndicator.stopAnimating()
+            }
+        }
+    }
+    
+    func didReceiveError(message: String?) {
+        if let errorMessage = message {
+            DispatchQueue.main.async { [weak self] in
+                self?.showError(message: errorMessage)
+            }
+        }
     }
 }
 
