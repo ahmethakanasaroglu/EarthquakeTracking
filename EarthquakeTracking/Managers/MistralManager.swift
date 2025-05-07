@@ -71,6 +71,8 @@ class MistralManager {
             Lütfen bu soruya SADECE TÜRKÇE olarak, 9-10 cümleyle kısa ve öz yanıt ver. 
             Cümleler dilbilgisi açısından doğru, anlamlı ve bağlantılı olmalı.
             Kesinlikle İngilizce kelime kullanma.
+            Türkçe dil kurallarına dikkat et, doğru ve doğal cümleler olsun. Sohbet ağzıyla konuşabilirsin. ASLA İMLA HATASI VE KONUŞMA BOZUKLUĞU, SAÇMA CÜMLE YAPISI GİBİ HATALAR YAPMA.
+            SANA SORULAN SORULARI İYİCE ANLAYIP CEVAP VER. ALAKASIZ CEVAPLAR VERME, GEREKSİZ KONUŞMAYI UZATMA.
             """
         
         historyMessages[historyMessages.count - 1]["content"] = userInstruction
