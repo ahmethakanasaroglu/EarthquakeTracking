@@ -177,10 +177,10 @@ class EarthquakeMapViewController: UIViewController {
             }
         }
     }
-
+    
     private func performFocusOnEarthquake(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
-        // Bu işlevi de geliştirelim - önce bölgeyi ayarla
-        let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
+        // Daha yakın zoom seviyesi kullanalım
+        let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
         mapView.setRegion(region, animated: true)
         
         // Annotation'u bulmaya çalış
@@ -189,7 +189,7 @@ class EarthquakeMapViewController: UIViewController {
         for annotation in mapView.annotations {
             if let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
                 if abs(earthquakeAnnotation.coordinate.latitude - coordinate.latitude) < 0.00001 &&
-                   abs(earthquakeAnnotation.coordinate.longitude - coordinate.longitude) < 0.00001 {
+                    abs(earthquakeAnnotation.coordinate.longitude - coordinate.longitude) < 0.00001 {
                     targetAnnotation = earthquakeAnnotation
                     break
                 }
@@ -213,7 +213,7 @@ class EarthquakeMapViewController: UIViewController {
             // Annotation view'ı al veya bekle ve sonra highlight et
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
                 if let annotationView = self?.mapView.view(for: annotation) {
-                    self?.highlightAnnotationView(annotationView)
+                    self?.highlightSelectedAnnotation(annotationView)
                     self?.selectedAnnotationView = annotationView
                     
                     // Popup'ı göster
@@ -233,6 +233,20 @@ class EarthquakeMapViewController: UIViewController {
                 view.transform = CGAffineTransform.identity
                 view.markerTintColor = viewModel.getColor(for: earthquakeAnnotation.earthquake)
                 view.layer.zPosition = 0
+                
+                // Gölge ve parıltı efektlerini kaldır
+                view.layer.shadowOpacity = 0
+                
+                // Glyphleri normal hale getir
+                let magnitude = viewModel.getMagnitude(for: earthquakeAnnotation.earthquake)
+                if magnitude >= 5.0 {
+                    view.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
+                } else if magnitude >= 4.0 {
+                    view.glyphImage = UIImage(systemName: "exclamationmark")
+                } else {
+                    view.glyphImage = UIImage(systemName: "waveform.path.ecg")
+                }
+                view.glyphTintColor = .white
             }
         }
     }
@@ -258,6 +272,44 @@ class EarthquakeMapViewController: UIViewController {
             markerView.layer.shadowColor = UIColor.white.cgColor
             markerView.layer.shadowOpacity = 0.8
             markerView.layer.shadowRadius = 5
+            markerView.layer.shadowOffset = CGSize.zero
+        }
+    }
+    
+    // Seçilen annotation için daha belirgin bir vurgulama
+    private func highlightSelectedAnnotation(_ view: MKAnnotationView) {
+        // Seçilen annotation'u belirgin şekilde vurgula
+        UIView.animate(withDuration: 0.3) {
+            // Daha büyük ve belirgin yap
+            view.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+        }
+        
+        // Dikkat çekici pulse animasyonu ekle
+        let pulseAnimation = CABasicAnimation(keyPath: "transform.scale")
+        pulseAnimation.duration = 0.8
+        pulseAnimation.fromValue = 1.8
+        pulseAnimation.toValue = 2.2
+        pulseAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        pulseAnimation.autoreverses = true
+        pulseAnimation.repeatCount = 3
+        view.layer.add(pulseAnimation, forKey: "pulse")
+        
+        // En üstte göster
+        view.layer.zPosition = 1000
+        
+        // Marker'ı daha görünür yap
+        if let markerView = view as? MKMarkerAnnotationView {
+            // Glyph'i değiştir ve daha belirgin yap
+            markerView.glyphImage = UIImage(systemName: "target")
+            markerView.glyphTintColor = .white
+            
+            // Özel bir renk ata - normal renklerden farklı olsun
+            markerView.markerTintColor = UIColor.systemPurple
+            
+            // Glow efekti ekle
+            markerView.layer.shadowColor = UIColor.white.cgColor
+            markerView.layer.shadowOpacity = 1.0
+            markerView.layer.shadowRadius = 8
             markerView.layer.shadowOffset = CGSize.zero
         }
     }
@@ -691,8 +743,15 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                 annotationView?.glyphTintColor = .white
             }
             
-            if earthquakeAnnotation.isSelected {
-                highlightAnnotationView(annotationView!)
+            // Özel işaretleme ekle - seçilmiş annotation ise farklı bir görünüm uygula
+            if let selectedEarthquake = viewModel.selectedEarthquake,
+               earthquakeAnnotation.matchesEarthquake(selectedEarthquake) {
+                
+                annotationView?.markerTintColor = UIColor.systemPurple
+                annotationView?.glyphImage = UIImage(systemName: "target")
+                annotationView?.glyphTintColor = .white
+                annotationView?.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
+                annotationView?.layer.zPosition = 1000
             }
             
             return annotationView
@@ -718,7 +777,7 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                 // Yeni bir annotation'a tıklandıysa veya popup kapalıysa, vurgula ve popup'ı göster
                 resetAllAnnotations()
                 annotation.isSelected = true
-                highlightAnnotationView(view)
+                highlightSelectedAnnotation(view)
                 selectedAnnotationView = view
                 viewModel.selectEarthquake(annotation)
             }
@@ -733,7 +792,7 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
                 
                 if earthquakeAnnotation.isSelected {
-                    highlightAnnotationView(view)
+                    highlightSelectedAnnotation(view)
                 } else {
                     let scale = viewModel.getMarkerScale(for: earthquakeAnnotation.earthquake)
                     view.transform = CGAffineTransform(scaleX: scale, y: scale)
