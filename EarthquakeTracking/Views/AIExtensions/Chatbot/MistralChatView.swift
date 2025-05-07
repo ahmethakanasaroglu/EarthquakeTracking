@@ -1,11 +1,9 @@
 import UIKit
-import Combine
 
 class MistralChatViewController: UIViewController {
     
     // MARK: - Properties
     private let mistralManager = MistralManager()
-    private var cancellables = Set<AnyCancellable>()
     
     private let tableView = UITableView()
     private let messageInputBar = UIView()
@@ -20,7 +18,7 @@ class MistralChatViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupBindings()
+        setupNotificationObservers()
         setupKeyboardObservers()
     }
     
@@ -170,7 +168,6 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupConstraints() {
-
         let infoViewConstraints: [NSLayoutConstraint] = [
             infoView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             infoView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -190,7 +187,6 @@ class MistralChatViewController: UIViewController {
         if bottomConstraint != nil {
             NSLayoutConstraint.activate(messageBarConstraints)
         } else {
-
             NSLayoutConstraint.activate([
                 messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -203,7 +199,6 @@ class MistralChatViewController: UIViewController {
     }
     
     private func updateTableViewConstraints(infoViewVisible: Bool = true) {
-
         for constraint in view.constraints {
             if (constraint.firstItem === tableView && constraint.firstAttribute == .top) ||
                (constraint.secondItem === tableView && constraint.secondAttribute == .top) {
@@ -226,33 +221,50 @@ class MistralChatViewController: UIViewController {
         view.layoutIfNeeded()
     }
     
-    private func setupBindings() {
-        mistralManager.$messages
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.tableView.reloadData()
-                self?.scrollToBottom()
-            }
-            .store(in: &cancellables)
+    // MARK: - Notification Observers
+    private func setupNotificationObservers() {
+        // Mesajlar değiştiğinde
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(messagesDidChange),
+            name: MistralManager.messagesDidChangeNotification,
+            object: nil
+        )
         
-        mistralManager.$isTyping
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] isTyping in
-                if isTyping {
-                    self?.showTypingIndicator()
-                } else {
-                    self?.hideTypingIndicator()
-                }
-            }
-            .store(in: &cancellables)
+        // Yazma durumu değiştiğinde
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(typingStatusDidChange),
+            name: MistralManager.typingStatusDidChangeNotification,
+            object: nil
+        )
         
-        mistralManager.$error
-            .receive(on: DispatchQueue.main)
-            .compactMap { $0 }
-            .sink { [weak self] errorMessage in
-                self?.showErrorAlert(message: errorMessage)
-            }
-            .store(in: &cancellables)
+        // Hata oluştuğunda
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(errorDidChange),
+            name: MistralManager.errorDidChangeNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func messagesDidChange() {
+        tableView.reloadData()
+        scrollToBottom()
+    }
+    
+    @objc private func typingStatusDidChange() {
+        if mistralManager.isTyping {
+            showTypingIndicator()
+        } else {
+            hideTypingIndicator()
+        }
+    }
+    
+    @objc private func errorDidChange() {
+        if let error = mistralManager.error {
+            showErrorAlert(message: error)
+        }
     }
     
     private func setupKeyboardObservers() {
@@ -375,7 +387,6 @@ class MistralChatViewController: UIViewController {
 // MARK: - UITableViewDelegate, UITableViewDataSource
 extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-
         return mistralManager.messages.filter { $0.role != .system }.count
     }
     
@@ -449,7 +460,7 @@ class MessageCell: UITableViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-
+        
         for view in [bubbleView, messageLabel, timeLabel] {
             view.removeFromSuperview()
         }

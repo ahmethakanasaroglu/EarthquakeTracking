@@ -1,17 +1,19 @@
 import Foundation
-import Combine
 
-class MistralManager: ObservableObject {
-    @Published var messages: [MistralMessage] = []
-    @Published var isTyping: Bool = false
-    @Published var error: String? = nil
+class MistralManager {
+    var messages: [MistralMessage] = []
+    var isTyping: Bool = false
+    var error: String? = nil
     
+    // Notification için kullanılacak sabitler
+    static let messagesDidChangeNotification = Notification.Name("MessagesDidChangeNotification")
+    static let typingStatusDidChangeNotification = Notification.Name("TypingStatusDidChangeNotification")
+    static let errorDidChangeNotification = Notification.Name("ErrorDidChangeNotification")
 
     private let baseURL = "http://localhost:11434/api/chat"
     private let modelName = "mistral"
     
     init() {
-
         let systemMessage = MistralMessage(
             role: .system,
             content: """
@@ -34,15 +36,27 @@ class MistralManager: ObservableObject {
         messages.append(systemMessage)
     }
     
+    // Yardımcı metotlar - Notification gönderme
+    private func notifyMessagesDidChange() {
+        NotificationCenter.default.post(name: MistralManager.messagesDidChangeNotification, object: self)
+    }
+    
+    private func notifyTypingStatusDidChange() {
+        NotificationCenter.default.post(name: MistralManager.typingStatusDidChangeNotification, object: self)
+    }
+    
+    private func notifyErrorDidChange() {
+        NotificationCenter.default.post(name: MistralManager.errorDidChangeNotification, object: self, userInfo: ["error": error as Any])
+    }
+    
     func sendMessage(_ userMessage: String) {
-
         let newUserMessage = MistralMessage(role: .user, content: userMessage)
         messages.append(newUserMessage)
+        notifyMessagesDidChange()
         
-
         isTyping = true
+        notifyTypingStatusDidChange()
         
-
         var historyMessages: [[String: String]] = []
         for message in messages {
             historyMessages.append([
@@ -51,7 +65,6 @@ class MistralManager: ObservableObject {
             ])
         }
         
-
         let userInstruction = """
             Soru: \(userMessage)
             
@@ -62,7 +75,6 @@ class MistralManager: ObservableObject {
         
         historyMessages[historyMessages.count - 1]["content"] = userInstruction
         
-
         let requestBody: [String: Any] = [
             "model": modelName,
             "messages": historyMessages,
@@ -101,6 +113,7 @@ class MistralManager: ObservableObject {
             
             DispatchQueue.main.async {
                 self.isTyping = false
+                self.notifyTypingStatusDidChange()
                 
                 if let error = error {
                     self.handleError("Bağlantı hatası: \(error.localizedDescription)")
@@ -114,7 +127,6 @@ class MistralManager: ObservableObject {
                 
                 do {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-
                         if let errorMessage = json["error"] as? String {
                             self.handleError("Yapay zeka hatası")
                             return
@@ -126,6 +138,7 @@ class MistralManager: ObservableObject {
                             let processedContent = self.processTurkishResponse(content)
                             let assistantMessage = MistralMessage(role: .assistant, content: processedContent)
                             self.messages.append(assistantMessage)
+                            self.notifyMessagesDidChange()
                         } else {
                             self.handleError("Geçersiz yanıt formatı")
                         }
@@ -156,7 +169,6 @@ class MistralManager: ObservableObject {
         var cleanedLines: [String] = []
         
         for line in lines {
-
             if line.range(of: "\\b[a-zA-Z]{4,}\\b", options: .regularExpression) != nil &&
                line.range(of: "[çğıöşüÇĞİÖŞÜ]", options: .regularExpression) == nil {
                 continue
@@ -196,13 +208,17 @@ class MistralManager: ObservableObject {
     
     private func handleError(_ message: String) {
         error = message
+        notifyErrorDidChange()
+        
         isTyping = false
+        notifyTypingStatusDidChange()
         
         let errorMessage = MistralMessage(
             role: .assistant,
             content: "Üzgünüm, şu anda yanıt veremiyorum. Lütfen internet bağlantınızı ve Mistral modelinin çalıştığını kontrol edin."
         )
         messages.append(errorMessage)
+        notifyMessagesDidChange()
     }
     
     func clearConversation() {
@@ -227,6 +243,7 @@ class MistralManager: ObservableObject {
             """
         )
         messages.append(systemMessage)
+        notifyMessagesDidChange()
     }
 }
 
