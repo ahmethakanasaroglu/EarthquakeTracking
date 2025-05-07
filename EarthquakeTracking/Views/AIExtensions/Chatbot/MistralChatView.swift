@@ -14,6 +14,12 @@ class MistralChatViewController: UIViewController {
     private var keyboardHeight: CGFloat = 0
     private var bottomConstraint: NSLayoutConstraint!
     
+    // Arka plan için gradient layer
+    private let gradientLayer = CAGradientLayer()
+    
+    // İlk mesaj oluşturuldu mu
+    private var welcomeMessageSent = false
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,14 +28,41 @@ class MistralChatViewController: UIViewController {
         setupKeyboardObservers()
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        gradientLayer.frame = view.bounds
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.prefersLargeTitles = false
+        navigationController?.setNavigationBarHidden(true, animated: true)
+        
+        // Tab bar rengini koyu mavi yap
+        setupTabBarAppearance()
+        
+        // Hoş geldiniz mesajını göster
+        if !welcomeMessageSent {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let welcomeMessage = MistralMessage(
+                    role: .assistant,
+                    content: "Merhaba! Ben Deprem Asistanınızım. Depremler, deprem güvenliği ve hazırlıkları hakkında sorularınızı yanıtlayabilirim. Size nasıl yardımcı olabilirim?"
+                )
+                self.mistralManager.messages.append(welcomeMessage)
+                self.tableView.reloadData()
+                self.scrollToBottom()
+                self.welcomeMessageSent = true
+            }
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: true)
         navigationController?.navigationBar.prefersLargeTitles = true
+        
+        // Tab bar'ı varsayılan rengine geri çevir
+        resetTabBarAppearance()
     }
     
     deinit {
@@ -38,26 +71,131 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - UI Setup
     private func setupUI() {
-        title = "Deprem Chatbot"
-        view.backgroundColor = .systemBackground
+        // Arka plan rengi ve gradient
+        setupGradientBackground()
         
         setupTableView()
         setupInfoView()
         setupMessageBar()
+        setupNavigationBar()
         
         view.addSubview(tableView)
         view.addSubview(infoView)
         view.addSubview(messageInputBar)
         
         setupConstraints()
+    }
+    
+    private func setupTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Tab bar'ı koyu mavi yap
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Görseldeki koyu mavi renk
+            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            
+            // Tab bar öğeleri
+            let itemAppearance = UITabBarItemAppearance()
+            
+            // Normal durum renkleri
+            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
+            itemAppearance.normal.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
+            ]
+            
+            // Seçili durum renkleri
+            itemAppearance.selected.iconColor = .white
+            itemAppearance.selected.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white
+            ]
+            
+            appearance.stackedLayoutAppearance = itemAppearance
+            appearance.inlineLayoutAppearance = itemAppearance
+            appearance.compactInlineLayoutAppearance = itemAppearance
+            
+            tabBar.standardAppearance = appearance
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = appearance
+            }
+        }
+    }
+    
+    private func resetTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Varsayılan tab bar görünümünü geri yükle
+            tabBar.standardAppearance = UITabBarAppearance()
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = tabBar.standardAppearance
+            }
+        }
+    }
+    
+    private func setupGradientBackground() {
+        // Görseldeki mavi tonlarıyla gradient oluştur
+        gradientLayer.colors = [
+            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
         
-        let clearButton = UIBarButtonItem(
-            image: UIImage(systemName: "trash"),
-            style: .plain,
-            target: self,
-            action: #selector(clearConversation)
-        )
-        navigationItem.rightBarButtonItem = clearButton
+        view.layer.insertSublayer(gradientLayer, at: 0)
+    }
+    
+    private func setupNavigationBar() {
+        // Özel bir navigation bar görünümü
+        let navBar = UIView()
+        navBar.translatesAutoresizingMaskIntoConstraints = false
+        navBar.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
+        navBar.layer.cornerRadius = 10
+        
+        let backButton = UIButton(type: .system)
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(systemName: "chevron.backward"), for: .normal)
+        backButton.tintColor = .white
+        backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
+        
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = "Deprem Asistanı"
+        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        titleLabel.textColor = .white
+        
+        let clearButton = UIButton(type: .system)
+        clearButton.translatesAutoresizingMaskIntoConstraints = false
+        clearButton.setImage(UIImage(systemName: "trash"), for: .normal)
+        clearButton.tintColor = .white
+        clearButton.addTarget(self, action: #selector(clearConversation), for: .touchUpInside)
+        
+        navBar.addSubview(backButton)
+        navBar.addSubview(titleLabel)
+        navBar.addSubview(clearButton)
+        
+        view.addSubview(navBar)
+        
+        NSLayoutConstraint.activate([
+            navBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            navBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            navBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            navBar.heightAnchor.constraint(equalToConstant: 50),
+            
+            backButton.leadingAnchor.constraint(equalTo: navBar.leadingAnchor, constant: 16),
+            backButton.centerYAnchor.constraint(equalTo: navBar.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 30),
+            backButton.heightAnchor.constraint(equalToConstant: 30),
+            
+            titleLabel.centerXAnchor.constraint(equalTo: navBar.centerXAnchor),
+            titleLabel.centerYAnchor.constraint(equalTo: navBar.centerYAnchor),
+            
+            clearButton.trailingAnchor.constraint(equalTo: navBar.trailingAnchor, constant: -16),
+            clearButton.centerYAnchor.constraint(equalTo: navBar.centerYAnchor),
+            clearButton.widthAnchor.constraint(equalToConstant: 30),
+            clearButton.heightAnchor.constraint(equalToConstant: 30)
+        ])
     }
     
     private func setupTableView() {
@@ -66,32 +204,37 @@ class MistralChatViewController: UIViewController {
         tableView.dataSource = self
         tableView.register(MessageCell.self, forCellReuseIdentifier: "MessageCell")
         tableView.separatorStyle = .none
-        tableView.backgroundColor = .systemBackground
+        tableView.backgroundColor = .clear
         tableView.keyboardDismissMode = .interactive
         tableView.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
+        
+        // Dokunarak klavyeyi kapatma
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        tableView.addGestureRecognizer(tapGesture)
     }
     
     private func setupInfoView() {
         infoView.translatesAutoresizingMaskIntoConstraints = false
-        infoView.backgroundColor = UIColor.systemIndigo.withAlphaComponent(0.1)
-        infoView.layer.cornerRadius = 10
+        infoView.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
+        infoView.layer.cornerRadius = 15
         
         let infoIconView = UIImageView(image: UIImage(systemName: "info.circle.fill"))
         infoIconView.translatesAutoresizingMaskIntoConstraints = false
-        infoIconView.tintColor = .systemIndigo
+        infoIconView.tintColor = .white
         infoIconView.contentMode = .scaleAspectFit
         
         let infoLabel = UILabel()
         infoLabel.translatesAutoresizingMaskIntoConstraints = false
-        infoLabel.text = "Depremler, güvenlik önlemleri, deprem terminolojisi ve Türkiye'deki depremler hakkında sorular sorabilirsiniz."
-        infoLabel.textColor = .darkGray
+        infoLabel.text = "Depremler, güvenlik önlemleri ve Türkiye'deki depremler hakkında sorular sorabilirsiniz."
+        infoLabel.textColor = .white
         infoLabel.font = UIFont.systemFont(ofSize: 14)
         infoLabel.numberOfLines = 0
         
         let closeButton = UIButton(type: .system)
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         closeButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        closeButton.tintColor = .darkGray
+        closeButton.tintColor = .white
         closeButton.addTarget(self, action: #selector(dismissInfoView), for: .touchUpInside)
         
         infoView.addSubview(infoIconView)
@@ -118,27 +261,29 @@ class MistralChatViewController: UIViewController {
     
     private func setupMessageBar() {
         messageInputBar.translatesAutoresizingMaskIntoConstraints = false
-        messageInputBar.backgroundColor = .systemBackground
-        messageInputBar.layer.shadowColor = UIColor.gray.cgColor
-        messageInputBar.layer.shadowOffset = CGSize(width: 0, height: -3)
-        messageInputBar.layer.shadowOpacity = 0.1
-        messageInputBar.layer.shadowRadius = 5
+        messageInputBar.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
+        messageInputBar.layer.cornerRadius = 25
         
         let textFieldContainer = UIView()
         textFieldContainer.translatesAutoresizingMaskIntoConstraints = false
-        textFieldContainer.backgroundColor = .secondarySystemBackground
+        textFieldContainer.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
         textFieldContainer.layer.cornerRadius = 20
         
         messageTextField.translatesAutoresizingMaskIntoConstraints = false
         messageTextField.placeholder = "Depremler hakkında bir soru sorun..."
+        messageTextField.attributedPlaceholder = NSAttributedString(
+            string: "Depremler hakkında bir soru sorun...",
+            attributes: [NSAttributedString.Key.foregroundColor: UIColor(white: 1.0, alpha: 0.6)]
+        )
         messageTextField.borderStyle = .none
         messageTextField.backgroundColor = .clear
         messageTextField.returnKeyType = .send
+        messageTextField.textColor = .white
         messageTextField.delegate = self
         
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill"), for: .normal)
-        sendButton.tintColor = .systemIndigo
+        sendButton.tintColor = .white
         sendButton.contentEdgeInsets = UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
         sendButton.addTarget(self, action: #selector(sendMessage), for: .touchUpInside)
         
@@ -165,32 +310,26 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupConstraints() {
+        let navBarHeight: CGFloat = 70 // Navigation bar ve padding için alan
+        
+        // Sadece custom navigation bar'ı kullanacağımız için, original constraints yerine yenilerini ekliyoruz
         let infoViewConstraints: [NSLayoutConstraint] = [
-            infoView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            infoView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: navBarHeight),
             infoView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             infoView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             infoView.heightAnchor.constraint(greaterThanOrEqualToConstant: 80)
         ]
         NSLayoutConstraint.activate(infoViewConstraints)
         
-        bottomConstraint = messageInputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        bottomConstraint = messageInputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         let messageBarConstraints: [NSLayoutConstraint] = [
-            messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             messageInputBar.heightAnchor.constraint(equalToConstant: 70),
             bottomConstraint
         ]
         
-        if bottomConstraint != nil {
-            NSLayoutConstraint.activate(messageBarConstraints)
-        } else {
-            NSLayoutConstraint.activate([
-                messageInputBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                messageInputBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                messageInputBar.heightAnchor.constraint(equalToConstant: 70),
-                messageInputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-            ])
-        }
+        NSLayoutConstraint.activate(messageBarConstraints)
         
         updateTableViewConstraints()
     }
@@ -206,13 +345,18 @@ class MistralChatViewController: UIViewController {
         if infoViewVisible {
             tableView.topAnchor.constraint(equalTo: infoView.bottomAnchor, constant: 8).isActive = true
         } else {
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor).isActive = true
+            // Custom navigation bar'ın altından başla
+            if let navBar = view.subviews.first(where: { $0.subviews.contains(where: { ($0 as? UILabel)?.text == "Deprem Asistanı" }) }) {
+                tableView.topAnchor.constraint(equalTo: navBar.bottomAnchor, constant: 16).isActive = true
+            } else {
+                tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 70).isActive = true
+            }
         }
         
         NSLayoutConstraint.activate([
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: messageInputBar.topAnchor)
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            tableView.bottomAnchor.constraint(equalTo: messageInputBar.topAnchor, constant: -8)
         ])
         
         view.layoutIfNeeded()
@@ -220,7 +364,6 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - Notification Observers
     private func setupNotificationObservers() {
-
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(messagesDidChange),
@@ -298,6 +441,19 @@ class MistralChatViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "İptal", style: .cancel))
         alert.addAction(UIAlertAction(title: "Temizle", style: .destructive) { [weak self] _ in
             self?.mistralManager.clearConversation()
+            self?.welcomeMessageSent = false
+            
+            // Hoş geldiniz mesajını tekrar göster
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let welcomeMessage = MistralMessage(
+                    role: .assistant,
+                    content: "Merhaba! Ben Deprem Asistanınızım. Depremler, deprem güvenliği ve hazırlıkları hakkında sorularınızı yanıtlayabilirim. Size nasıl yardımcı olabilirim?"
+                )
+                self?.mistralManager.messages.append(welcomeMessage)
+                self?.tableView.reloadData()
+                self?.scrollToBottom()
+                self?.welcomeMessageSent = true
+            }
         })
         
         present(alert, animated: true)
@@ -312,9 +468,17 @@ class MistralChatViewController: UIViewController {
         }
     }
     
+    @objc private func backButtonTapped() {
+        navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
     @objc private func keyboardWillShow(notification: NSNotification) {
         if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
-            bottomConstraint.constant = -keyboardSize.height + view.safeAreaInsets.bottom
+            bottomConstraint.constant = -keyboardSize.height
             
             UIView.animate(withDuration: 0.3) {
                 self.view.layoutIfNeeded()
@@ -325,7 +489,7 @@ class MistralChatViewController: UIViewController {
     }
     
     @objc private func keyboardWillHide(notification: NSNotification) {
-        bottomConstraint.constant = 0
+        bottomConstraint.constant = -20
         
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
@@ -334,24 +498,22 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - Helper Methods
     private func scrollToBottom() {
-        if mistralManager.messages.count > 0 {
-
-            let visibleMessages = mistralManager.messages.filter { $0.role != .system }
-            
-            if visibleMessages.count > 0 {
-                let indexPath = IndexPath(row: visibleMessages.count - 1, section: 0)
-                tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
-            }
+        let visibleMessages = mistralManager.messages.filter { $0.role != .system }
+        
+        if visibleMessages.count > 0 {
+            let indexPath = IndexPath(row: visibleMessages.count - 1, section: 0)
+            tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
         }
     }
     
     private func showTypingIndicator() {
         let loadingCell = UIActivityIndicatorView(style: .medium)
+        loadingCell.color = .white
         loadingCell.startAnimating()
         loadingCell.frame = CGRect(x: 13, y: 10, width: 30, height: 30)
         
         let containerView = UIView()
-        containerView.backgroundColor = .secondarySystemBackground
+        containerView.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
         containerView.layer.cornerRadius = 16
         containerView.frame = CGRect(x: 16, y: 0, width: 50, height: 50)
         containerView.addSubview(loadingCell)
@@ -424,6 +586,9 @@ class MessageCell: UITableViewCell {
     private let bubbleView = UIView()
     private let timeLabel = UILabel()
     
+    // Asistan mesajları için enerji halkası efekti
+    private let energyRingView = UIImageView()
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -438,7 +603,7 @@ class MessageCell: UITableViewCell {
         backgroundColor = .clear
         
         bubbleView.translatesAutoresizingMaskIntoConstraints = false
-        bubbleView.layer.cornerRadius = 16
+        bubbleView.layer.cornerRadius = 18
         
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.numberOfLines = 0
@@ -446,8 +611,13 @@ class MessageCell: UITableViewCell {
         
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
         timeLabel.font = UIFont.systemFont(ofSize: 10)
-        timeLabel.textColor = .tertiaryLabel
+        timeLabel.textColor = UIColor(white: 1.0, alpha: 0.7)
         
+        energyRingView.translatesAutoresizingMaskIntoConstraints = false
+        energyRingView.contentMode = .scaleAspectFit
+        energyRingView.isHidden = true
+        
+        contentView.addSubview(energyRingView)
         contentView.addSubview(bubbleView)
         bubbleView.addSubview(messageLabel)
         contentView.addSubview(timeLabel)
@@ -456,7 +626,7 @@ class MessageCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         
-        for view in [bubbleView, messageLabel, timeLabel] {
+        for view in [bubbleView, messageLabel, timeLabel, energyRingView] {
             view.removeFromSuperview()
         }
         
@@ -466,8 +636,19 @@ class MessageCell: UITableViewCell {
     func configure(with message: MistralMessage) {
         let isUser = message.role == .user
         
-        bubbleView.backgroundColor = isUser ? .systemIndigo : .secondarySystemBackground
-        messageLabel.textColor = isUser ? .white : .label
+        if isUser {
+            bubbleView.backgroundColor = UIColor(red: 0.0/255.0, green: 120.0/255.0, blue: 210.0/255.0, alpha: 0.8)
+            messageLabel.textColor = .white
+            energyRingView.isHidden = true
+        } else {
+            // Asistan mesajları için transparent bubble
+            bubbleView.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
+            messageLabel.textColor = .white
+            
+            // Asistan mesajlarında enerji halkası görünümü
+            energyRingView.isHidden = false
+            energyRingView.image = createEnergyRingImage()
+        }
         
         messageLabel.text = message.content
         
@@ -499,8 +680,13 @@ class MessageCell: UITableViewCell {
                 messageLabel.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 12),
                 messageLabel.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -12),
                 
+                energyRingView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+                energyRingView.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: 0),
+                energyRingView.widthAnchor.constraint(equalToConstant: 40),
+                energyRingView.heightAnchor.constraint(equalToConstant: 40),
+                
                 bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
-                bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                bubbleView.leadingAnchor.constraint(equalTo: energyRingView.trailingAnchor, constant: 4),
                 bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
                 bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.75),
                 
@@ -510,5 +696,39 @@ class MessageCell: UITableViewCell {
             
             bubbleView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner]
         }
+    }
+    
+    // Asistan mesajları için yeşil enerji halkası efekti oluştur
+    private func createEnergyRingImage() -> UIImage? {
+        let size = CGSize(width: 40, height: 40)
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        
+        // Dıştan içe doğru yeşil renk gradyanı oluştur
+        let colors = [
+            UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.1).cgColor,
+            UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.5).cgColor,
+            UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.0).cgColor
+        ]
+        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let colorLocations: [CGFloat] = [0.0, 0.5, 1.0]
+        
+        guard let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: colorLocations) else { return nil }
+        
+        let center = CGPoint(x: size.width/2, y: size.height/2)
+        context.drawRadialGradient(gradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: size.width/2, options: [])
+        
+        // Halkayı çiz
+        context.setStrokeColor(UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.8).cgColor)
+        context.setLineWidth(1.5)
+        context.addEllipse(in: CGRect(x: 5, y: 5, width: size.width-10, height: size.height-10))
+        context.strokePath()
+        
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return image
     }
 }

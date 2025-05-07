@@ -8,7 +8,23 @@ class PersonalizedViewController: UIViewController {
     private let viewModel = PersonalizedViewModel()
     private let locationManager = CLLocationManager()
     
+    // Kart geçişleri için özellikler
+    private var currentCardIndex = 0
+    private var cards: [UIView] = []
+    
     // MARK: - UI Elements
+    private lazy var backgroundGradientLayer: CAGradientLayer = {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        return gradientLayer
+    }()
+    
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -26,10 +42,10 @@ class PersonalizedViewController: UIViewController {
     private lazy var headerView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = AppTheme.primaryColor
+        view.backgroundColor = UIColor.white.withAlphaComponent(0.1)
         view.layer.cornerRadius = 16
         
-        view.layer.shadowColor = AppTheme.primaryColor.cgColor
+        view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 4)
         view.layer.shadowRadius = 8
         view.layer.shadowOpacity = 0.3
@@ -65,11 +81,33 @@ class PersonalizedViewController: UIViewController {
         return label
     }()
     
-    private lazy var featuresContainerView: UIView = {
+    private lazy var cardScrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.isPagingEnabled = true
+        scrollView.delegate = self
+        scrollView.clipsToBounds = false
+        return scrollView
+    }()
+    
+    private lazy var cardContainer: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.backgroundColor = .clear
+        view.clipsToBounds = false
         return view
+    }()
+    
+    private lazy var pageControl: UIPageControl = {
+        let pageControl = UIPageControl()
+        pageControl.translatesAutoresizingMaskIntoConstraints = false
+        pageControl.numberOfPages = 4
+        pageControl.currentPage = 0
+        pageControl.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.3)
+        pageControl.currentPageIndicatorTintColor = .white
+        pageControl.addTarget(self, action: #selector(pageControlTapped(_:)), for: .valueChanged)
+        return pageControl
     }()
     
     private lazy var riskIndicatorView: RiskIndicatorView = {
@@ -81,9 +119,25 @@ class PersonalizedViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupBackground()
         setupUI()
         setupLocationManager()
         setupBindings()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        backgroundGradientLayer.frame = view.bounds
+        
+        // cardScrollView içeriğini ayarla
+        let featuresCount = 4
+        cardScrollView.contentSize = CGSize(
+            width: cardScrollView.frame.width * CGFloat(featuresCount),
+            height: cardScrollView.frame.height
+        )
+        
+        // Kartları yerleştir
+        positionCards()
     }
     
     deinit {
@@ -93,12 +147,26 @@ class PersonalizedViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         viewModel.loadRiskDataForCurrentLocation()
+        
+        // TabBar'ı koyu mavi renge ayarla
+        setupTabBarAppearance()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // TabBar'ı eski haline döndür
+        resetTabBarAppearance()
     }
     
     // MARK: - Setup
+    private func setupBackground() {
+        view.layer.insertSublayer(backgroundGradientLayer, at: 0)
+    }
+    
     private func setupUI() {
         title = "Kişiselleştirilmiş"
-        view.backgroundColor = AppTheme.backgroundColor
+        view.backgroundColor = .clear
         
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
@@ -109,9 +177,8 @@ class PersonalizedViewController: UIViewController {
         headerView.addSubview(headerDescriptionLabel)
         
         contentView.addSubview(riskIndicatorView)
-        contentView.addSubview(featuresContainerView)
-        
-        setupFeatures()
+        contentView.addSubview(cardScrollView)
+        contentView.addSubview(pageControl)
         
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -147,145 +214,229 @@ class PersonalizedViewController: UIViewController {
             riskIndicatorView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             riskIndicatorView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             
-            featuresContainerView.topAnchor.constraint(equalTo: riskIndicatorView.bottomAnchor, constant: 24),
-            featuresContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            featuresContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            featuresContainerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
-        ])
-    }
-    
-    private func setupFeatures() {
-        let featuresStackView = UIStackView()
-        featuresStackView.translatesAutoresizingMaskIntoConstraints = false
-        featuresStackView.axis = .vertical
-        featuresStackView.spacing = 20
-        featuresStackView.distribution = .fill
-        featuresStackView.alignment = .fill
-        
-        featuresContainerView.addSubview(featuresStackView)
-        
-        NSLayoutConstraint.activate([
-            featuresStackView.topAnchor.constraint(equalTo: featuresContainerView.topAnchor),
-            featuresStackView.leadingAnchor.constraint(equalTo: featuresContainerView.leadingAnchor),
-            featuresStackView.trailingAnchor.constraint(equalTo: featuresContainerView.trailingAnchor),
-            featuresStackView.bottomAnchor.constraint(equalTo: featuresContainerView.bottomAnchor)
+            cardScrollView.topAnchor.constraint(equalTo: riskIndicatorView.bottomAnchor, constant: 24),
+            cardScrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            cardScrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            cardScrollView.heightAnchor.constraint(equalToConstant: 350),
+            
+            pageControl.topAnchor.constraint(equalTo: cardScrollView.bottomAnchor, constant: 16),
+            pageControl.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            pageControl.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
         
-        let notificationFeature = createFeatureCard(
-            title: "Kişiselleştirilmiş Uyarı Sistemi",
-            description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin.",
-            iconName: "bell.fill",
-            color: AppTheme.primaryColor,
-            action: #selector(openNotificationSettings)
-        )
-        
-        let simulationFeature = createFeatureCard(
-            title: "Deprem Simülasyonu",
-            description: "Farklı büyüklüklerdeki depremlerin etkilerini deneyimleyin.",
-            iconName: "waveform.path.ecg",
-            color: AppTheme.secondaryColor,
-            action: #selector(openSimulation)
-        )
-        
-        let statsFeature = createFeatureCard(
-            title: "Deprem Analizi",
-            description: "Depremlerin büyüklüğünü, sayısını, yoğunluğunu analiz edin",
-            iconName: "chart.line.uptrend.xyaxis",
-            color: AppTheme.accentColor,
-            action: #selector(openStats)
-        )
-        
-        let riskModelFeature = createFeatureCard(
-            title: "Deprem Riski Tahmin Modeli",
-            description: "Yapay zeka ile bölgenizdeki deprem riskini görüntüleyin.",
-            iconName: "map.fill",
-            color: AppTheme.primaryLightColor,
-            action: #selector(openRiskModel)
-        )
-        
-        featuresStackView.addArrangedSubview(notificationFeature)
-        featuresStackView.addArrangedSubview(simulationFeature)
-        featuresStackView.addArrangedSubview(statsFeature)
-        featuresStackView.addArrangedSubview(riskModelFeature)
+        setupCards()
     }
     
-    private func createFeatureCard(title: String, description: String, iconName: String, color: UIColor, action: Selector) -> UIView {
+    private func setupTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Tab bar'ı koyu mavi yap
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Görseldeki koyu mavi renk
+            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            
+            // Tab bar öğeleri
+            let itemAppearance = UITabBarItemAppearance()
+            
+            // Normal durum renkleri
+            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
+            itemAppearance.normal.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
+            ]
+            
+            // Seçili durum renkleri
+            itemAppearance.selected.iconColor = .white
+            itemAppearance.selected.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white
+            ]
+            
+            appearance.stackedLayoutAppearance = itemAppearance
+            appearance.inlineLayoutAppearance = itemAppearance
+            appearance.compactInlineLayoutAppearance = itemAppearance
+            
+            tabBar.standardAppearance = appearance
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = appearance
+            }
+        }
+    }
+    
+    private func resetTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Varsayılan tab bar görünümünü geri yükle
+            tabBar.standardAppearance = UITabBarAppearance()
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = tabBar.standardAppearance
+            }
+        }
+    }
+    
+    private func setupCards() {
+        // Kart özellikleri
+        let features = [
+            (title: "Kişiselleştirilmiş Uyarı Sistemi", description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin.", icon: "bell.fill", color: "#3498db", action: #selector(openNotificationSettings)),
+            (title: "Deprem Simülasyonu", description: "Farklı büyüklüklerdeki depremlerin etkilerini deneyimleyin.", icon: "waveform.path.ecg", color: "#9b59b6", action: #selector(openSimulation)),
+            (title: "Deprem Analizi", description: "Depremlerin büyüklüğünü, sayısını, yoğunluğunu analiz edin", icon: "chart.line.uptrend.xyaxis", color: "#e74c3c", action: #selector(openStats)),
+            (title: "Deprem Riski Tahmin Modeli", description: "Yapay zeka ile bölgenizdeki deprem riskini görüntüleyin.", icon: "map.fill", color: "#2ecc71", action: #selector(openRiskModel))
+        ]
+        
+        // Kartları oluştur
+        cards = []
+        
+        for (index, feature) in features.enumerated() {
+            let card = createCardView(
+                title: feature.title,
+                description: feature.description,
+                iconName: feature.icon,
+                color: feature.color,
+                action: feature.action
+            )
+            
+            cardScrollView.addSubview(card)
+            cards.append(card)
+        }
+    }
+    
+    private func positionCards() {
+        let pageWidth = cardScrollView.frame.width
+        let cardWidth = pageWidth - 60 // Her iki taraftan 30px boşluk
+        
+        for (index, card) in cards.enumerated() {
+            // Kart boyutu ve pozisyonu
+            let xPosition = (pageWidth * CGFloat(index)) + ((pageWidth - cardWidth) / 2)
+            
+            card.frame = CGRect(
+                x: xPosition,
+                y: 10,
+                width: cardWidth,
+                height: cardScrollView.frame.height - 20
+            )
+            
+            // Köşe yuvarlama ve gölge ekle
+            card.layer.cornerRadius = 20
+            card.layer.shadowColor = UIColor.black.cgColor
+            card.layer.shadowOpacity = 0.2
+            card.layer.shadowOffset = CGSize(width: 0, height: 5)
+            card.layer.shadowRadius = 10
+        }
+    }
+    
+    private func createCardView(title: String, description: String, iconName: String, color: String, action: Selector) -> UIView {
         let cardView = UIView()
-        cardView.translatesAutoresizingMaskIntoConstraints = false
-        AppTheme.applyCardStyle(to: cardView)
+        cardView.backgroundColor = .white
         
+        // Dokunma algılayıcısı ekle
         let tapGesture = UITapGestureRecognizer(target: self, action: action)
         cardView.addGestureRecognizer(tapGesture)
         cardView.isUserInteractionEnabled = true
         
+        // Renk çubuğu
+        let colorView = UIView()
+        colorView.translatesAutoresizingMaskIntoConstraints = false
+        colorView.backgroundColor = hexToUIColor(hex: color)
+        colorView.layer.cornerRadius = 20
+        colorView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        
+        // İkon arka planı
         let iconContainer = UIView()
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.backgroundColor = color
-        iconContainer.layer.cornerRadius = 25
+        iconContainer.backgroundColor = hexToUIColor(hex: color)
+        iconContainer.layer.cornerRadius = 30
         
-        iconContainer.layer.shadowColor = color.cgColor
-        iconContainer.layer.shadowOffset = CGSize(width: 0, height: 3)
-        iconContainer.layer.shadowRadius = 5
-        iconContainer.layer.shadowOpacity = 0.4
-        
+        // İkon
         let iconImageView = UIImageView(image: UIImage(systemName: iconName))
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.tintColor = .white
         
+        // Başlık
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
-        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        titleLabel.textColor = AppTheme.titleTextColor
+        titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
+        titleLabel.textColor = UIColor.darkGray
+        titleLabel.numberOfLines = 2
         
+        // Açıklama
         let descriptionLabel = UILabel()
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         descriptionLabel.text = description
-        descriptionLabel.font = UIFont.systemFont(ofSize: 14)
-        descriptionLabel.textColor = AppTheme.bodyTextColor
+        descriptionLabel.font = UIFont.systemFont(ofSize: 16)
+        descriptionLabel.textColor = UIColor.gray
         descriptionLabel.numberOfLines = 0
         
-        let arrowImageView = UIImageView(image: UIImage(systemName: "chevron.right"))
+        // İleri oku
+        let arrowImageView = UIImageView(image: UIImage(systemName: "arrow.right.circle.fill"))
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         arrowImageView.contentMode = .scaleAspectFit
-        arrowImageView.tintColor = color
+        arrowImageView.tintColor = hexToUIColor(hex: color)
         
+        // Hiyerarşi oluştur
         iconContainer.addSubview(iconImageView)
+        cardView.addSubview(colorView)
         cardView.addSubview(iconContainer)
         cardView.addSubview(titleLabel)
         cardView.addSubview(descriptionLabel)
         cardView.addSubview(arrowImageView)
         
+        // Constraint'leri ayarla
         NSLayoutConstraint.activate([
-            cardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            colorView.topAnchor.constraint(equalTo: cardView.topAnchor),
+            colorView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            colorView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            colorView.heightAnchor.constraint(equalToConstant: 100),
             
-            iconContainer.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            iconContainer.widthAnchor.constraint(equalToConstant: 50),
-            iconContainer.heightAnchor.constraint(equalToConstant: 50),
+            iconContainer.centerYAnchor.constraint(equalTo: colorView.bottomAnchor),
+            iconContainer.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
+            iconContainer.widthAnchor.constraint(equalToConstant: 60),
+            iconContainer.heightAnchor.constraint(equalToConstant: 60),
             
             iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
             iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            iconImageView.heightAnchor.constraint(equalToConstant: 24),
+            iconImageView.widthAnchor.constraint(equalToConstant: 30),
+            iconImageView.heightAnchor.constraint(equalToConstant: 30),
             
-            titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: arrowImageView.leadingAnchor, constant: -8),
+            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
             
-            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            descriptionLabel.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 16),
-            descriptionLabel.trailingAnchor.constraint(equalTo: arrowImageView.leadingAnchor, constant: -8),
-            descriptionLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
+            descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
+            descriptionLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 20),
+            descriptionLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
             
-            arrowImageView.centerYAnchor.constraint(equalTo: cardView.centerYAnchor),
-            arrowImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            arrowImageView.widthAnchor.constraint(equalToConstant: 16),
-            arrowImageView.heightAnchor.constraint(equalToConstant: 16)
+            arrowImageView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20),
+            arrowImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -20),
+            arrowImageView.widthAnchor.constraint(equalToConstant: 30),
+            arrowImageView.heightAnchor.constraint(equalToConstant: 30)
         ])
         
         return cardView
+    }
+    
+    // Hex kodunu UIColor'a dönüştürme yardımcı fonksiyonu
+    private func hexToUIColor(hex: String) -> UIColor {
+        var cString: String = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        
+        if cString.hasPrefix("#") {
+            cString.remove(at: cString.startIndex)
+        }
+        
+        if cString.count != 6 {
+            return .gray
+        }
+        
+        var rgbValue: UInt64 = 0
+        Scanner(string: cString).scanHexInt64(&rgbValue)
+        
+        return UIColor(
+            red: CGFloat((rgbValue & 0xFF0000) >> 16) / 255.0,
+            green: CGFloat((rgbValue & 0x00FF00) >> 8) / 255.0,
+            blue: CGFloat(rgbValue & 0x0000FF) / 255.0,
+            alpha: 1.0
+        )
     }
     
     private func setupLocationManager() {
@@ -296,7 +447,6 @@ class PersonalizedViewController: UIViewController {
     }
     
     private func setupBindings() {
-
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleRiskLevelUpdated(_:)),
@@ -305,6 +455,19 @@ class PersonalizedViewController: UIViewController {
         )
     }
     
+    // MARK: - Card Animation & Scroll
+    @objc private func pageControlTapped(_ sender: UIPageControl) {
+        scrollToCard(at: sender.currentPage, animated: true)
+    }
+    
+    private func scrollToCard(at index: Int, animated: Bool) {
+        let pageWidth = cardScrollView.frame.width
+        let contentOffsetX = CGFloat(index) * pageWidth
+        
+        cardScrollView.setContentOffset(CGPoint(x: contentOffsetX, y: 0), animated: animated)
+    }
+    
+    // MARK: - Actions
     @objc private func handleRiskLevelUpdated(_ notification: Notification) {
         if let riskLevel = notification.userInfo?["level"] as? RiskLevel,
            let isLoading = notification.userInfo?["isLoading"] as? Bool {
@@ -315,7 +478,6 @@ class PersonalizedViewController: UIViewController {
         }
     }
     
-    // MARK: - Actions
     @objc private func openNotificationSettings() {
         let notificationVC = NotificationSettingsViewController(viewModel: viewModel)
         navigationController?.pushViewController(notificationVC, animated: true)
@@ -334,6 +496,30 @@ class PersonalizedViewController: UIViewController {
     @objc private func openRiskModel() {
         let riskModelVC = RiskModelViewController(viewModel: viewModel)
         navigationController?.pushViewController(riskModelVC, animated: true)
+    }
+}
+
+// MARK: - UIScrollViewDelegate
+extension PersonalizedViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let pageWidth = scrollView.frame.size.width
+        let currentPage = Int((scrollView.contentOffset.x + pageWidth / 2) / pageWidth)
+        
+        if pageControl.currentPage != currentPage && currentPage >= 0 && currentPage < cards.count {
+            pageControl.currentPage = currentPage
+            currentCardIndex = currentPage
+        }
+    }
+    
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        // Kaydırma bittiğinde aktif kartı güncelle
+        let pageWidth = scrollView.frame.size.width
+        let currentPage = Int(scrollView.contentOffset.x / pageWidth)
+        
+        if currentPage >= 0 && currentPage < cards.count {
+            currentCardIndex = currentPage
+            pageControl.currentPage = currentPage
+        }
     }
 }
 
@@ -405,24 +591,24 @@ class RiskIndicatorView: UIView {
     }
     
     private func setupView() {
-        AppTheme.applyCardStyle(to: self)
-        backgroundColor = AppTheme.backgroundColor
+        backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        layer.cornerRadius = 20
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Bölge Deprem Riski"
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        titleLabel.textColor = AppTheme.titleTextColor
+        titleLabel.textColor = .white
         
         riskLabel.translatesAutoresizingMaskIntoConstraints = false
         riskLabel.text = "Hesaplanıyor..."
         riskLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        riskLabel.textColor = AppTheme.bodyTextColor
+        riskLabel.textColor = .white
         
         riskBar.translatesAutoresizingMaskIntoConstraints = false
-        riskBar.progressTintColor = AppTheme.primaryColor
-        riskBar.trackTintColor = UIColor.systemGray5
+        riskBar.progressTintColor = .white
+        riskBar.trackTintColor = UIColor.white.withAlphaComponent(0.3)
         riskBar.progress = 0.5
         riskBar.layer.cornerRadius = 4
         riskBar.clipsToBounds = true
@@ -430,16 +616,16 @@ class RiskIndicatorView: UIView {
         locationIconView.translatesAutoresizingMaskIntoConstraints = false
         locationIconView.image = UIImage(systemName: "location.circle.fill")
         locationIconView.contentMode = .scaleAspectFit
-        locationIconView.tintColor = AppTheme.primaryColor
+        locationIconView.tintColor = .white
         
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.text = "Şu anki konumunuz"
         locationLabel.font = UIFont.systemFont(ofSize: 14)
-        locationLabel.textColor = AppTheme.bodyTextColor
+        locationLabel.textColor = .white.withAlphaComponent(0.8)
         
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         activityIndicator.hidesWhenStopped = true
-        activityIndicator.color = AppTheme.primaryColor
+        activityIndicator.color = .white
         activityIndicator.startAnimating()
         
         addSubview(containerView)
@@ -491,20 +677,20 @@ class RiskIndicatorView: UIView {
         
         switch riskLevel {
         case .high:
-            riskLabel.textColor = AppTheme.errorColor
-            riskBar.progressTintColor = AppTheme.errorColor
+            riskLabel.textColor = UIColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0) // Açık kırmızı
+            riskBar.progressTintColor = UIColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0)
             riskBar.progress = 0.9
         case .medium:
-            riskLabel.textColor = AppTheme.warningColor
-            riskBar.progressTintColor = AppTheme.warningColor
+            riskLabel.textColor = UIColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
+            riskBar.progressTintColor = UIColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0)
             riskBar.progress = 0.6
         case .low:
-            riskLabel.textColor = AppTheme.successColor
-            riskBar.progressTintColor = AppTheme.successColor
+            riskLabel.textColor = UIColor(red: 0.3, green: 0.8, blue: 0.3, alpha: 1.0) // Açık yeşil
+            riskBar.progressTintColor = UIColor(red: 0.3, green: 0.8, blue: 0.3, alpha: 1.0)
             riskBar.progress = 0.3
         case .unknown:
-            riskLabel.textColor = AppTheme.bodyTextColor
-            riskBar.progressTintColor = AppTheme.bodyTextColor
+            riskLabel.textColor = .white
+            riskBar.progressTintColor = .white
             riskBar.progress = 0.1
         }
         
@@ -517,7 +703,7 @@ class RiskIndicatorView: UIView {
         if isLoading {
             activityIndicator.startAnimating()
             riskLabel.text = "Hesaplanıyor..."
-            riskLabel.textColor = AppTheme.bodyTextColor
+            riskLabel.textColor = .white
         } else {
             activityIndicator.stopAnimating()
         }
