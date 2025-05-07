@@ -11,12 +11,11 @@ protocol PersonalizedViewModelDelegate: AnyObject {
     func didUpdateNewLocation(name: String, coordinate: CLLocationCoordinate2D?)
     func didUpdateUserLocation(location: CLLocationCoordinate2D?)
     func didUpdateSimulationSettings(magnitude: Double, isActive: Bool, intensity: Double, effect: SimulationEffect)
-    func didUpdateARScanState(isActive: Bool, step: Int, results: [ScanResult], progress: Float)
     func didUpdateRiskData(level: RiskLevel, isLoading: Bool, coordinates: [CLLocationCoordinate2D])
 }
 
 class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
-
+    
     static let notificationSettingsChangedNotification = Notification.Name("notificationSettingsChangedNotification")
     static let magnitudeThresholdChangedNotification = Notification.Name("magnitudeThresholdChangedNotification")
     static let monitoredLocationsChangedNotification = Notification.Name("monitoredLocationsChangedNotification")
@@ -24,7 +23,6 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
     static let newLocationChangedNotification = Notification.Name("newLocationChangedNotification")
     static let userLocationChangedNotification = Notification.Name("userLocationChangedNotification")
     static let simulationSettingsChangedNotification = Notification.Name("simulationSettingsChangedNotification")
-    static let arScanStateChangedNotification = Notification.Name("arScanStateChangedNotification")
     static let riskDataChangedNotification = Notification.Name("riskDataChangedNotification")
     
     private(set) var enableNotifications = false {
@@ -118,30 +116,6 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
         }
     }
     
-    private(set) var isARScanActive = false {
-        didSet {
-            updateARScanState()
-        }
-    }
-    
-    private(set) var currentScanStep = 0 {
-        didSet {
-            updateARScanState()
-        }
-    }
-    
-    private(set) var scanResults: [ScanResult] = [] {
-        didSet {
-            updateARScanState()
-        }
-    }
-    
-    private(set) var scanProgress: Float = 0.0 {
-        didSet {
-            updateARScanState()
-        }
-    }
-    
     private(set) var riskLevelForCurrentLocation: RiskLevel = .unknown {
         didSet {
             updateRiskData()
@@ -218,24 +192,6 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
         )
     }
     
-    private func updateARScanState() {
-        delegate?.didUpdateARScanState(
-            isActive: isARScanActive,
-            step: currentScanStep,
-            results: scanResults,
-            progress: scanProgress
-        )
-        NotificationCenter.default.post(
-            name: PersonalizedViewModel.arScanStateChangedNotification,
-            object: self,
-            userInfo: [
-                "isActive": isARScanActive,
-                "step": currentScanStep,
-                "results": scanResults,
-                "progress": scanProgress
-            ]
-        )
-    }
     
     private func updateRiskData() {
         delegate?.didUpdateRiskData(
@@ -433,39 +389,11 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
     
     // MARK: - AR Ev Güvenliği Taraması
     
-    func startARScan() {
-        isARScanActive = true
-        currentScanStep = 0
-        scanResults = []
-        scanProgress = 0.0
-        
-        advanceToNextScanStep()
-    }
     
-    func stopARScan() {
-        isARScanActive = false
-    }
     
-    func advanceToNextScanStep() {
-        currentScanStep += 1
-        
-        if currentScanStep > scanSteps.count {
-            completeScan()
-            return
-        }
-        
-        scanProgress = Float(currentScanStep) / Float(scanSteps.count)
-    }
     
-    private func completeScan() {
-        scanResults = [
-            ScanResult(id: UUID(), title: "Kitaplık", riskLevel: .high, recommendation: "Kitaplığı duvara sabitleyin."),
-            ScanResult(id: UUID(), title: "Cam Eşyalar", riskLevel: .medium, recommendation: "Camları alçak raflara taşıyın veya sabitleyin."),
-            ScanResult(id: UUID(), title: "Elektrik Kabloları", riskLevel: .low, recommendation: "Uzatma kablolarını toplayarak düzenleyin.")
-        ]
-        
-        stopARScan()
-    }
+    
+    
     
     // MARK: - Risk Tahmin Modeli
     
@@ -542,21 +470,6 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
         }
     }
     
-    // MARK: - Yardımcı Veri Modelleri ve Sabitler
-    
-    var scanSteps: [ScanStep] {
-        return [
-            ScanStep(id: 1, title: "Kitaplık ve Raflar", description: "Kamerayı kitaplık ve yüksek raflara doğrultun."),
-            ScanStep(id: 2, title: "Cam Eşyalar", description: "Kamerayı cam eşyaların bulunduğu alanlara doğrultun."),
-            ScanStep(id: 3, title: "Ağır Mobilyalar", description: "Kamerayı ağır mobilyalara doğrultun."),
-            ScanStep(id: 4, title: "Elektrik Kabloları", description: "Kamerayı elektrik kablolarının olduğu alanlara doğrultun.")
-        ]
-    }
-    
-    var currentScanStepInfo: ScanStep? {
-        guard currentScanStep > 0 && currentScanStep <= scanSteps.count else { return nil }
-        return scanSteps[currentScanStep - 1]
-    }
 }
 
 // MARK: - Veri Modelleri
@@ -569,18 +482,6 @@ struct MonitoredLocation: Codable, Identifiable {
     var notificationThreshold: Double
 }
 
-struct ScanStep: Identifiable {
-    let id: Int
-    let title: String
-    let description: String
-}
-
-struct ScanResult: Identifiable {
-    let id: UUID
-    let title: String
-    let riskLevel: RiskLevel
-    let recommendation: String
-}
 
 enum RiskLevel: String, Codable {
     case unknown = "Bilinmiyor"
@@ -623,7 +524,7 @@ struct SeededRandomGenerator {
     }
     
     mutating func nextDouble() -> Double {
-
+        
         seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
         return Double(seed) / Double(0x7FFFFFFF)
     }
