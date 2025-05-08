@@ -16,8 +16,8 @@ class PersonalizedViewController: UIViewController {
     private lazy var backgroundGradientLayer: CAGradientLayer = {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
-            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
-            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+            UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0).cgColor, // Daha açık İndigo rengi üst
+            UIColor(red: 70.0/255.0, green: 20.0/255.0, blue: 120.0/255.0, alpha: 1.0).cgColor   // Daha açık İndigo rengi alt
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -42,7 +42,7 @@ class PersonalizedViewController: UIViewController {
     private lazy var headerView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        view.backgroundColor = UIColor.white.withAlphaComponent(0.15)
         view.layer.cornerRadius = 16
         
         view.layer.shadowColor = UIColor.black.cgColor
@@ -123,6 +123,7 @@ class PersonalizedViewController: UIViewController {
         setupUI()
         setupLocationManager()
         setupBindings()
+        setupNavigationBarAppearance()
     }
     
     override func viewDidLayoutSubviews() {
@@ -148,7 +149,7 @@ class PersonalizedViewController: UIViewController {
         super.viewWillAppear(animated)
         viewModel.loadRiskDataForCurrentLocation()
         
-        // TabBar'ı koyu mavi renge ayarla
+        // TabBar'ı indigo renge ayarla
         setupTabBarAppearance()
     }
     
@@ -161,6 +162,28 @@ class PersonalizedViewController: UIViewController {
     // MARK: - Setup
     private func setupBackground() {
         view.layer.insertSublayer(backgroundGradientLayer, at: 0)
+    }
+    
+    private func setupNavigationBarAppearance() {
+        if let navigationBar = self.navigationController?.navigationBar {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Daha açık turuncu navigasyon rengi
+            appearance.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0)
+            
+            // Navigation bar öğeleri
+            appearance.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white,
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 18, weight: .bold)
+            ]
+            
+            navigationBar.standardAppearance = appearance
+            navigationBar.scrollEdgeAppearance = appearance
+            navigationBar.compactAppearance = appearance
+            
+            navigationBar.tintColor = .white
+        }
     }
     
     private func setupUI() {
@@ -228,12 +251,12 @@ class PersonalizedViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Tab bar'ı koyu mavi yap
+            // Tab bar'ı indigo yap
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             
-            // Görseldeki koyu mavi renk
-            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            // Daha açık İndigo rengi
+            appearance.backgroundColor = UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0)
             
             // Tab bar öğeleri
             let itemAppearance = UITabBarItemAppearance()
@@ -590,7 +613,7 @@ class RiskIndicatorView: UIView {
     }
     
     private func setupView() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        backgroundColor = UIColor.white.withAlphaComponent(0.15)
         layer.cornerRadius = 20
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
