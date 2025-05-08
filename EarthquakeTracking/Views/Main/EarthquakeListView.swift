@@ -9,8 +9,8 @@ class EarthquakeListViewController: UIViewController {
     private lazy var backgroundGradientLayer: CAGradientLayer = {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
-            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
-            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+            UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0).cgColor, // Daha açık İndigo rengi üst
+            UIColor(red: 70.0/255.0, green: 20.0/255.0, blue: 120.0/255.0, alpha: 1.0).cgColor   // Daha açık İndigo rengi alt
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -118,6 +118,7 @@ class EarthquakeListViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setupTabBarAppearance()
+        setupNavigationBarAppearance()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -131,6 +132,28 @@ class EarthquakeListViewController: UIViewController {
     // MARK: - Setup
     private func setupBackground() {
         view.layer.insertSublayer(backgroundGradientLayer, at: 0)
+    }
+    
+    private func setupNavigationBarAppearance() {
+        if let navigationBar = self.navigationController?.navigationBar {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Daha açık turuncu navigasyon rengi
+            appearance.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0)
+            
+            // Navigation bar öğeleri
+            appearance.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white,
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 18, weight: .bold)
+            ]
+            
+            navigationBar.standardAppearance = appearance
+            navigationBar.scrollEdgeAppearance = appearance
+            navigationBar.compactAppearance = appearance
+            
+            navigationBar.tintColor = .white
+        }
     }
     
     private func setupUI() {
@@ -192,12 +215,12 @@ class EarthquakeListViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Tab bar'ı koyu mavi yap
+            // Tab bar'ı indigo yap
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             
-            // Görseldeki koyu mavi renk
-            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            // Daha açık İndigo rengi
+            appearance.backgroundColor = UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0)
             
             // Tab bar öğeleri
             let itemAppearance = UITabBarItemAppearance()
@@ -397,7 +420,8 @@ extension EarthquakeListViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension EarthquakeListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
+        // Seçim animasyonunu devre dışı bırakmak için seçimi hemen kaldır
+        tableView.deselectRow(at: indexPath, animated: false)
         
         let selectedEarthquake = viewModel.earthquakes[indexPath.row]
         
@@ -420,7 +444,7 @@ extension EarthquakeListViewController: UITableViewDelegate {
             completion(true)
         }
         
-        detailsAction.backgroundColor = UIColor(red: 0.0/255.0, green: 100.0/255.0, blue: 180.0/255.0, alpha: 1.0)
+        detailsAction.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Daha açık turuncu
         detailsAction.image = UIImage(systemName: "info.circle")
         
         return UISwipeActionsConfiguration(actions: [detailsAction])
@@ -460,7 +484,7 @@ class ModernEarthquakeCell: UITableViewCell {
     }
     
     private func setupUI() {
-        selectionStyle = .default
+        selectionStyle = .none // Seçim stilini kaldır
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         
@@ -474,7 +498,7 @@ class ModernEarthquakeCell: UITableViewCell {
         
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        locationLabel.textColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+        locationLabel.textColor = UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0) // Daha açık indigo
         locationLabel.numberOfLines = 2
         
         dateTimeLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -482,7 +506,7 @@ class ModernEarthquakeCell: UITableViewCell {
         dateTimeLabel.textColor = UIColor.darkGray
         
         magnitudeCircleView.translatesAutoresizingMaskIntoConstraints = false
-        magnitudeCircleView.backgroundColor = UIColor(red: 65.0/255.0, green: 130.0/255.0, blue: 234.0/255.0, alpha: 1.0)
+        magnitudeCircleView.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Daha açık turuncu
         magnitudeCircleView.layer.cornerRadius = 26
         magnitudeCircleView.layer.shadowColor = UIColor.black.cgColor
         magnitudeCircleView.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -616,13 +640,13 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitudeIconView.image = UIImage(systemName: "exclamationmark.triangle.fill")
             magnitudeValueLabel.textColor = UIColor(red: 231.0/255.0, green: 76.0/255.0, blue: 60.0/255.0, alpha: 1.0) // Kırmızı
         } else if magValue >= 4.0 {
-            magnitudeCircleView.backgroundColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Turuncu
+            magnitudeCircleView.backgroundColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Koyu turuncu
             magnitudeIconView.image = UIImage(systemName: "exclamationmark")
-            magnitudeValueLabel.textColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Turuncu
+            magnitudeValueLabel.textColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Koyu turuncu
         } else {
-            magnitudeCircleView.backgroundColor = UIColor(red: 52.0/255.0, green: 152.0/255.0, blue: 219.0/255.0, alpha: 1.0) // Mavi
+            magnitudeCircleView.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Daha açık turuncu
             magnitudeIconView.image = UIImage(systemName: "waveform.path.ecg")
-            magnitudeValueLabel.textColor = UIColor(red: 52.0/255.0, green: 152.0/255.0, blue: 219.0/255.0, alpha: 1.0) // Mavi
+            magnitudeValueLabel.textColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Daha açık turuncu
         }
         
         // Hareketli animasyon
@@ -652,8 +676,8 @@ class EarthquakeDetailsViewController: UIViewController {
     private lazy var backgroundGradientLayer: CAGradientLayer = {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
-            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
-            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+            UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0).cgColor, // Daha açık İndigo üst
+            UIColor(red: 70.0/255.0, green: 20.0/255.0, blue: 120.0/255.0, alpha: 1.0).cgColor  // Daha açık İndigo alt
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -673,11 +697,34 @@ class EarthquakeDetailsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupNavigationBarAppearance()
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         backgroundGradientLayer.frame = view.bounds
+    }
+    
+    private func setupNavigationBarAppearance() {
+        if let navigationBar = self.navigationController?.navigationBar {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Daha açık turuncu navigasyon rengi
+            appearance.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0)
+            
+            // Navigation bar öğeleri
+            appearance.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white,
+                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 18, weight: .bold)
+            ]
+            
+            navigationBar.standardAppearance = appearance
+            navigationBar.scrollEdgeAppearance = appearance
+            navigationBar.compactAppearance = appearance
+            
+            navigationBar.tintColor = .white
+        }
     }
     
     private func setupUI() {
@@ -691,7 +738,7 @@ class EarthquakeDetailsViewController: UIViewController {
         view.addSubview(mapView)
         
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.backgroundColor = UIColor(red: 0.0/255.0, green: 30.0/255.0, blue: 60.0/255.0, alpha: 1.0)
+        contentView.backgroundColor = UIColor(red: 85.0/255.0, green: 30.0/255.0, blue: 140.0/255.0, alpha: 1.0) // Daha açık indigo
         contentView.layer.cornerRadius = 24
         contentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         contentView.layer.shadowColor = UIColor.black.cgColor
@@ -802,7 +849,7 @@ class EarthquakeDetailsViewController: UIViewController {
         } else if magnitude >= 4.0 {
             return UIColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
         } else {
-            return UIColor(red: 0.3, green: 0.8, blue: 0.3, alpha: 1.0) // Açık yeşil
+            return UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Turuncu - önceden yeşildi
         }
     }
     
@@ -810,7 +857,7 @@ class EarthquakeDetailsViewController: UIViewController {
         
         let sectionView = UIView()
         sectionView.translatesAutoresizingMaskIntoConstraints = false
-        sectionView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        sectionView.backgroundColor = UIColor(red: 120.0/255.0, green: 60.0/255.0, blue: 180.0/255.0, alpha: 0.4) // Daha açık mor-lila karışımı
         sectionView.layer.cornerRadius = 16
         
         let iconView = UIImageView(image: UIImage(systemName: imageName))
@@ -858,7 +905,7 @@ class EarthquakeDetailsViewController: UIViewController {
         
         let infoView = UIView()
         infoView.translatesAutoresizingMaskIntoConstraints = false
-        infoView.backgroundColor = UIColor(red: 0.0/255.0, green: 60.0/255.0, blue: 120.0/255.0, alpha: 0.5)
+        infoView.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 0.3) // Turuncu bilgi kartı
         infoView.layer.cornerRadius = 16
         
         let infoIcon = UIImageView(image: UIImage(systemName: "info.circle.fill"))
