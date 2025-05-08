@@ -386,15 +386,7 @@ class PersonalizedViewModel: NSObject, CLLocationManagerDelegate {
             self.simulationIntensity = (sinValue + randomNoise) * maxIntensity * timeDecay
         }
     }
-    
-    // MARK: - AR Ev Güvenliği Taraması
-    
-    
-    
-    
-    
-    
-    
+ 
     // MARK: - Risk Tahmin Modeli
     
     func loadRiskDataForCurrentLocation() {
