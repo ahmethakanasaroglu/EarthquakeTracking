@@ -460,7 +460,7 @@ class ModernEarthquakeCell: UITableViewCell {
     }
     
     private func setupUI() {
-        selectionStyle = .default
+        selectionStyle = .none
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         
