@@ -133,10 +133,10 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupGradientBackground() {
-        // Görseldeki mavi tonlarıyla gradient oluştur
+        
         gradientLayer.colors = [
-            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
-            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+            AppTheme.primaryColor.cgColor,
+            AppTheme.primaryLightColor.cgColor
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -336,7 +336,7 @@ class MistralChatViewController: UIViewController {
     private func updateTableViewConstraints(infoViewVisible: Bool = true) {
         for constraint in view.constraints {
             if (constraint.firstItem === tableView && constraint.firstAttribute == .top) ||
-               (constraint.secondItem === tableView && constraint.secondAttribute == .top) {
+                (constraint.secondItem === tableView && constraint.secondAttribute == .top) {
                 view.removeConstraint(constraint)
             }
         }

@@ -638,6 +638,7 @@ class ModernEarthquakeCell: UITableViewCell {
 }
 
 // MARK: - EarthquakeDetailsViewController
+// MARK: - EarthquakeDetailsViewController
 class EarthquakeDetailsViewController: UIViewController {
     
     private let earthquake: Earthquake
@@ -645,9 +646,10 @@ class EarthquakeDetailsViewController: UIViewController {
     private let contentView = UIView()
     private lazy var backgroundGradientLayer: CAGradientLayer = {
         let gradientLayer = CAGradientLayer()
+        // Ana ekrandaki gradient ile aynı renkleri kullanıyoruz
         gradientLayer.colors = [
-            UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0).cgColor, // Daha açık İndigo üst
-            UIColor(red: 70.0/255.0, green: 20.0/255.0, blue: 120.0/255.0, alpha: 1.0).cgColor  // Daha açık İndigo alt
+            AppTheme.primaryColor.cgColor,
+            AppTheme.primaryLightColor.cgColor
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -697,8 +699,9 @@ class EarthquakeDetailsViewController: UIViewController {
         mapView.clipsToBounds = true
         view.addSubview(mapView)
         
+        // Content view'ın arka plan rengini ana gradient'in alt rengiyle uyumlu hale getiriyoruz
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.backgroundColor = UIColor(red: 85.0/255.0, green: 30.0/255.0, blue: 140.0/255.0, alpha: 1.0) // Daha açık indigo
+        contentView.backgroundColor = AppTheme.primaryLightColor.withAlphaComponent(0.8) // AppTheme'e uygun hale getirdik
         contentView.layer.cornerRadius = 24
         contentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         contentView.layer.shadowColor = UIColor.black.cgColor
@@ -725,9 +728,11 @@ class EarthquakeDetailsViewController: UIViewController {
             mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            mapView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.4),
+            // Haritanın yüksekliğini ekranın %40'ından %30'una düşürelim
+            mapView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.3), // 0.4 yerine 0.3
             
-            contentView.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: -20),
+            // Content view'ı haritaya daha yakın yerleştirerek, daha fazla alan kazandıralım
+            contentView.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: 16), // 20 yerine 16
             contentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -816,26 +821,26 @@ class EarthquakeDetailsViewController: UIViewController {
     private func addSectionToStackView(stackView: UIStackView, sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) {
         
         let sectionView = UIView()
-        sectionView.translatesAutoresizingMaskIntoConstraints = false
-        sectionView.backgroundColor = UIColor(red: 120.0/255.0, green: 60.0/255.0, blue: 180.0/255.0, alpha: 0.4) // Daha açık mor-lila karışımı
-        sectionView.layer.cornerRadius = 16
+            sectionView.translatesAutoresizingMaskIntoConstraints = false
+            sectionView.backgroundColor = UIColor.white
+            sectionView.layer.cornerRadius = 16
         
         let iconView = UIImageView(image: UIImage(systemName: imageName))
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.contentMode = .scaleAspectFit
-        iconView.tintColor = .white
+        iconView.tintColor = .darkGray
         
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = sectionTitle
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        titleLabel.textColor = .white.withAlphaComponent(0.8)
-        
+        titleLabel.textColor = UIColor.darkGray
+
         let contentLabel = UILabel()
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
         contentLabel.text = content
         contentLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        contentLabel.textColor = detailsColor ?? .white
+        contentLabel.textColor = detailsColor ?? UIColor.darkText
         contentLabel.numberOfLines = 0
         
         sectionView.addSubview(iconView)
