@@ -6,16 +6,81 @@ class AIExtensionsViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     
+    // Arka plan için gradient layer
+    private let gradientLayer = CAGradientLayer()
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupGradientBackground()
         setupUI()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        gradientLayer.frame = view.bounds
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setupTabBarAppearance()
+    }
+
+    // MARK: - Setup Methods
+    private func setupGradientBackground() {
+        // Görseldeki mavi tonlarıyla gradient oluştur
+        gradientLayer.colors = [
+            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        
+        view.layer.insertSublayer(gradientLayer, at: 0)
+    }
+    
+    // Ve setupTabBarAppearance metodunu AIExtensionsViewController'a ekleyin:
+    private func setupTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Tab bar'ı koyu mavi yap
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Görseldeki koyu mavi renk
+            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            
+            // Tab bar öğeleri
+            let itemAppearance = UITabBarItemAppearance()
+            
+            // Normal durum renkleri
+            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
+            itemAppearance.normal.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
+            ]
+            
+            // Seçili durum renkleri
+            itemAppearance.selected.iconColor = .white
+            itemAppearance.selected.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white
+            ]
+            
+            appearance.stackedLayoutAppearance = itemAppearance
+            appearance.inlineLayoutAppearance = itemAppearance
+            appearance.compactInlineLayoutAppearance = itemAppearance
+            
+            tabBar.standardAppearance = appearance
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = appearance
+            }
+        }
     }
     
     // MARK: - UI Setup
     private func setupUI() {
         title = "AI Eklentileri"
-        view.backgroundColor = AppTheme.backgroundColor
+        view.backgroundColor = .clear // Gradient için arka planı şeffaf yap
         
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false

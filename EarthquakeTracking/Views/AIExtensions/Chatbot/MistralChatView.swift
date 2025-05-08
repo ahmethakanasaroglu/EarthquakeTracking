@@ -62,7 +62,6 @@ class MistralChatViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = true
         
         // Tab bar'ı varsayılan rengine geri çevir
-        resetTabBarAppearance()
     }
     
     deinit {

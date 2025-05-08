@@ -5,6 +5,19 @@ class EarthquakeListViewController: UIViewController {
     
     private let viewModel = EarthquakeListViewModel()
     
+    // MARK: - UI Elements
+    private lazy var backgroundGradientLayer: CAGradientLayer = {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        return gradientLayer
+    }()
+    
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -14,7 +27,9 @@ class EarthquakeListViewController: UIViewController {
         tableView.estimatedRowHeight = 120
         tableView.rowHeight = UITableView.automaticDimension
         tableView.separatorStyle = .none
-        tableView.backgroundColor = AppTheme.backgroundColor
+        tableView.backgroundColor = .clear
+        tableView.showsVerticalScrollIndicator = true
+        tableView.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
         return tableView
     }()
     
@@ -22,14 +37,14 @@ class EarthquakeListViewController: UIViewController {
         let indicator = UIActivityIndicatorView(style: .large)
         indicator.translatesAutoresizingMaskIntoConstraints = false
         indicator.hidesWhenStopped = true
-        indicator.color = AppTheme.primaryColor
+        indicator.color = .white
         return indicator
     }()
     
     private lazy var refreshControl: UIRefreshControl = {
         let refreshControl = UIRefreshControl()
         refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
-        refreshControl.tintColor = AppTheme.primaryColor
+        refreshControl.tintColor = .white
         return refreshControl
     }()
     
@@ -44,29 +59,115 @@ class EarthquakeListViewController: UIViewController {
         return view
     }()
     
+    private lazy var headerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        view.layer.cornerRadius = 16
+        
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 4)
+        view.layer.shadowRadius = 8
+        view.layer.shadowOpacity = 0.3
+        
+        return view
+    }()
+    
+    private lazy var headerIconView: UIImageView = {
+        let imageView = UIImageView(image: UIImage(systemName: "waveform.path.ecg"))
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFit
+        imageView.tintColor = .white
+        return imageView
+    }()
+    
+    private lazy var headerLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Son Depremler"
+        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.textColor = .white
+        label.numberOfLines = 2
+        return label
+    }()
+    
+    private lazy var headerDescriptionLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "Türkiye ve çevresindeki son depremlerin listesi"
+        label.font = UIFont.systemFont(ofSize: 14)
+        label.textColor = .white.withAlphaComponent(0.9)
+        label.numberOfLines = 0
+        return label
+    }()
+    
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupBackground()
         setupUI()
         setupBindings()
         fetchEarthquakes()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        backgroundGradientLayer.frame = view.bounds
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        setupTabBarAppearance()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
     
+    // MARK: - Setup
+    private func setupBackground() {
+        view.layer.insertSublayer(backgroundGradientLayer, at: 0)
+    }
+    
     private func setupUI() {
         title = "Depremler"
-        view.backgroundColor = AppTheme.backgroundColor
+        view.backgroundColor = .clear
         
         tableView.refreshControl = refreshControl
+        
+        view.addSubview(headerView)
+        headerView.addSubview(headerIconView)
+        headerView.addSubview(headerLabel)
+        headerView.addSubview(headerDescriptionLabel)
         
         view.addSubview(tableView)
         view.addSubview(activityIndicator)
         view.addSubview(emptyStateView)
         
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            headerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            
+            headerIconView.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
+            headerIconView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            headerIconView.widthAnchor.constraint(equalToConstant: 40),
+            headerIconView.heightAnchor.constraint(equalToConstant: 40),
+            
+            headerLabel.topAnchor.constraint(equalTo: headerView.topAnchor, constant: 20),
+            headerLabel.leadingAnchor.constraint(equalTo: headerIconView.trailingAnchor, constant: 16),
+            headerLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
+            
+            headerDescriptionLabel.topAnchor.constraint(equalTo: headerLabel.bottomAnchor, constant: 8),
+            headerDescriptionLabel.leadingAnchor.constraint(equalTo: headerIconView.trailingAnchor, constant: 16),
+            headerDescriptionLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -20),
+            headerDescriptionLabel.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -20),
+            
+            tableView.topAnchor.constraint(equalTo: headerView.bottomAnchor, constant: 16),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
@@ -81,14 +182,62 @@ class EarthquakeListViewController: UIViewController {
         ])
         
         let sortButton = UIBarButtonItem(image: UIImage(systemName: "arrow.up.arrow.down"), style: .plain, target: self, action: #selector(showSortOptions))
+        sortButton.tintColor = .white
         
         let mapButton = UIBarButtonItem(image: UIImage(systemName: "map"), style: .plain, target: self, action: #selector(showMap))
+        mapButton.tintColor = .white
         
         navigationItem.rightBarButtonItems = [sortButton, mapButton]
     }
     
+    private func setupTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Tab bar'ı koyu mavi yap
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            
+            // Görseldeki koyu mavi renk
+            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            
+            // Tab bar öğeleri
+            let itemAppearance = UITabBarItemAppearance()
+            
+            // Normal durum renkleri
+            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
+            itemAppearance.normal.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
+            ]
+            
+            // Seçili durum renkleri
+            itemAppearance.selected.iconColor = .white
+            itemAppearance.selected.titleTextAttributes = [
+                NSAttributedString.Key.foregroundColor: UIColor.white
+            ]
+            
+            appearance.stackedLayoutAppearance = itemAppearance
+            appearance.inlineLayoutAppearance = itemAppearance
+            appearance.compactInlineLayoutAppearance = itemAppearance
+            
+            tabBar.standardAppearance = appearance
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = appearance
+            }
+        }
+    }
+    
+    private func resetTabBarAppearance() {
+        if let tabBar = self.tabBarController?.tabBar {
+            // Varsayılan tab bar görünümünü geri yükle
+            tabBar.standardAppearance = UITabBarAppearance()
+            
+            if #available(iOS 15.0, *) {
+                tabBar.scrollEdgeAppearance = tabBar.standardAppearance
+            }
+        }
+    }
+    
     private func setupBindings() {
-
         viewModel.delegate = self
         
         NotificationCenter.default.addObserver(
@@ -160,7 +309,9 @@ class EarthquakeListViewController: UIViewController {
         
         let dateAction = UIAlertAction(title: "Tarihe Göre", style: .default) { [weak self] _ in
             self?.viewModel.sortByDate()
-            self?.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
+            if let count = self?.viewModel.earthquakes.count, count > 0 {
+                self?.tableView.scrollToRow(at: IndexPath(row: 0, section: 0), at: .top, animated: true)
+            }
         }
         
         let magnitudeAction = UIAlertAction(title: "Büyüklüğe Göre", style: .default) { [weak self] _ in
@@ -269,7 +420,7 @@ extension EarthquakeListViewController: UITableViewDelegate {
             completion(true)
         }
         
-        detailsAction.backgroundColor = AppTheme.primaryLightColor
+        detailsAction.backgroundColor = UIColor(red: 0.0/255.0, green: 100.0/255.0, blue: 180.0/255.0, alpha: 1.0)
         detailsAction.image = UIImage(systemName: "info.circle")
         
         return UISwipeActionsConfiguration(actions: [detailsAction])
@@ -311,24 +462,29 @@ class ModernEarthquakeCell: UITableViewCell {
     private func setupUI() {
         selectionStyle = .default
         backgroundColor = .clear
+        contentView.backgroundColor = .clear
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        AppTheme.applyCardStyle(to: containerView)
+        containerView.backgroundColor = .white
+        containerView.layer.cornerRadius = 16
+        containerView.layer.shadowColor = UIColor.black.cgColor
+        containerView.layer.shadowOffset = CGSize(width: 0, height: 2)
+        containerView.layer.shadowRadius = 4
         containerView.layer.shadowOpacity = 0.1
         
         locationLabel.translatesAutoresizingMaskIntoConstraints = false
         locationLabel.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        locationLabel.textColor = AppTheme.titleTextColor
+        locationLabel.textColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
         locationLabel.numberOfLines = 2
         
         dateTimeLabel.translatesAutoresizingMaskIntoConstraints = false
         dateTimeLabel.font = UIFont.systemFont(ofSize: 14)
-        dateTimeLabel.textColor = AppTheme.bodyTextColor
+        dateTimeLabel.textColor = UIColor.darkGray
         
         magnitudeCircleView.translatesAutoresizingMaskIntoConstraints = false
-        magnitudeCircleView.backgroundColor = AppTheme.primaryColor
+        magnitudeCircleView.backgroundColor = UIColor(red: 65.0/255.0, green: 130.0/255.0, blue: 234.0/255.0, alpha: 1.0)
         magnitudeCircleView.layer.cornerRadius = 26
-        magnitudeCircleView.layer.shadowColor = AppTheme.primaryColor.cgColor
+        magnitudeCircleView.layer.shadowColor = UIColor.black.cgColor
         magnitudeCircleView.layer.shadowOffset = CGSize(width: 0, height: 2)
         magnitudeCircleView.layer.shadowRadius = 4
         magnitudeCircleView.layer.shadowOpacity = 0.3
@@ -347,23 +503,24 @@ class ModernEarthquakeCell: UITableViewCell {
         depthInfoView.translatesAutoresizingMaskIntoConstraints = false
         
         depthIconView.image = UIImage(systemName: "arrow.down")
-        depthIconView.tintColor = AppTheme.primaryColor
+        depthIconView.tintColor = UIColor.darkGray
         depthIconView.contentMode = .scaleAspectFit
         depthIconView.translatesAutoresizingMaskIntoConstraints = false
         
         depthLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        depthLabel.textColor = AppTheme.bodyTextColor
+        depthLabel.textColor = UIColor.darkGray
         depthLabel.translatesAutoresizingMaskIntoConstraints = false
         
         magnitudeInfoView.translatesAutoresizingMaskIntoConstraints = false
         
         magnitudeIconView2.image = UIImage(systemName: "waveform.path.ecg")
-        magnitudeIconView2.tintColor = AppTheme.primaryColor
+        magnitudeIconView2.tintColor = UIColor.darkGray
         magnitudeIconView2.contentMode = .scaleAspectFit
         magnitudeIconView2.translatesAutoresizingMaskIntoConstraints = false
         
         magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         magnitudeValueLabel.textAlignment = .left
+        magnitudeValueLabel.textColor = UIColor.darkGray
         magnitudeValueLabel.translatesAutoresizingMaskIntoConstraints = false
         
         magnitudeCircleView.addSubview(magnitudeIconView)
@@ -453,39 +610,36 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitude = "N/A"
         }
         
-        magnitudeCircleView.backgroundColor = AppTheme.magnitudeColor(for: magValue)
-        
+        // Update magnitude circle color based on magnitude
         if magValue >= 5.0 {
+            magnitudeCircleView.backgroundColor = UIColor(red: 231.0/255.0, green: 76.0/255.0, blue: 60.0/255.0, alpha: 1.0) // Kırmızı
             magnitudeIconView.image = UIImage(systemName: "exclamationmark.triangle.fill")
+            magnitudeValueLabel.textColor = UIColor(red: 231.0/255.0, green: 76.0/255.0, blue: 60.0/255.0, alpha: 1.0) // Kırmızı
         } else if magValue >= 4.0 {
+            magnitudeCircleView.backgroundColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Turuncu
             magnitudeIconView.image = UIImage(systemName: "exclamationmark")
+            magnitudeValueLabel.textColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Turuncu
         } else {
+            magnitudeCircleView.backgroundColor = UIColor(red: 52.0/255.0, green: 152.0/255.0, blue: 219.0/255.0, alpha: 1.0) // Mavi
             magnitudeIconView.image = UIImage(systemName: "waveform.path.ecg")
+            magnitudeValueLabel.textColor = UIColor(red: 52.0/255.0, green: 152.0/255.0, blue: 219.0/255.0, alpha: 1.0) // Mavi
         }
         
-        if magValue >= 5.0 {
-            magnitudeIconView.widthAnchor.constraint(equalToConstant: 32).isActive = true
-            magnitudeIconView.heightAnchor.constraint(equalToConstant: 32).isActive = true
-        } else {
-            magnitudeIconView.widthAnchor.constraint(equalToConstant: 28).isActive = true
-            magnitudeIconView.heightAnchor.constraint(equalToConstant: 28).isActive = true
-        }
-        
+        // Hareketli animasyon
         magnitudeValueLabel.text = "\(magnitude) ML"
-        magnitudeValueLabel.textColor = AppTheme.magnitudeTextColor(for: magValue)
-        
-        if magValue >= 5.0 {
-            magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .heavy)
-        } else {
-            magnitudeValueLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-        }
-        
         depthLabel.text = "\(earthquake.depth_km) km"
         
+        // Hafif bir cell animasyonu
         containerView.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
-        UIView.animate(withDuration: 0.2) {
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
             self.containerView.transform = CGAffineTransform.identity
-        }
+            self.containerView.alpha = 1.0
+        })
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        containerView.alpha = 0.8
     }
 }
 
@@ -495,6 +649,17 @@ class EarthquakeDetailsViewController: UIViewController {
     private let earthquake: Earthquake
     private let mapView = MKMapView()
     private let contentView = UIView()
+    private lazy var backgroundGradientLayer: CAGradientLayer = {
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0.0/255.0, green: 40.0/255.0, blue: 80.0/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        return gradientLayer
+    }()
     
     init(earthquake: Earthquake) {
         self.earthquake = earthquake
@@ -510,9 +675,15 @@ class EarthquakeDetailsViewController: UIViewController {
         setupUI()
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        backgroundGradientLayer.frame = view.bounds
+    }
+    
     private func setupUI() {
         title = "Deprem Detayları"
-        view.backgroundColor = AppTheme.backgroundColor
+        view.backgroundColor = .clear
+        view.layer.insertSublayer(backgroundGradientLayer, at: 0)
         
         mapView.translatesAutoresizingMaskIntoConstraints = false
         mapView.layer.cornerRadius = 16
@@ -520,13 +691,13 @@ class EarthquakeDetailsViewController: UIViewController {
         view.addSubview(mapView)
         
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.backgroundColor = AppTheme.backgroundColor
-        contentView.layer.cornerRadius = 16
+        contentView.backgroundColor = UIColor(red: 0.0/255.0, green: 30.0/255.0, blue: 60.0/255.0, alpha: 1.0)
+        contentView.layer.cornerRadius = 24
         contentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         contentView.layer.shadowColor = UIColor.black.cgColor
         contentView.layer.shadowOffset = CGSize(width: 0, height: -4)
         contentView.layer.shadowRadius = 6
-        contentView.layer.shadowOpacity = 0.1
+        contentView.layer.shadowOpacity = 0.2
         view.addSubview(contentView)
         
         setupContentView()
@@ -544,9 +715,9 @@ class EarthquakeDetailsViewController: UIViewController {
         }
         
         NSLayoutConstraint.activate([
-            mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             mapView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.4),
             
             contentView.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: -20),
@@ -612,7 +783,7 @@ class EarthquakeDetailsViewController: UIViewController {
             sectionTitle: "Büyüklük",
             content: magnitudeString,
             imageName: "waveform.path.ecg",
-            detailsColor: AppTheme.magnitudeColor(for: magnitudeValue)
+            detailsColor: getMagnitudeColor(for: magnitudeValue)
         )
         
         addSectionToStackView(
@@ -625,29 +796,39 @@ class EarthquakeDetailsViewController: UIViewController {
         addInformationSection(stackView: stackView)
     }
     
+    private func getMagnitudeColor(for magnitude: Double) -> UIColor {
+        if magnitude >= 5.0 {
+            return UIColor(red: 1.0, green: 0.4, blue: 0.4, alpha: 1.0) // Açık kırmızı
+        } else if magnitude >= 4.0 {
+            return UIColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0) // Sarı
+        } else {
+            return UIColor(red: 0.3, green: 0.8, blue: 0.3, alpha: 1.0) // Açık yeşil
+        }
+    }
+    
     private func addSectionToStackView(stackView: UIStackView, sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) {
         
         let sectionView = UIView()
         sectionView.translatesAutoresizingMaskIntoConstraints = false
-        sectionView.backgroundColor = AppTheme.secondaryBackgroundColor
-        sectionView.layer.cornerRadius = 12
+        sectionView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        sectionView.layer.cornerRadius = 16
         
         let iconView = UIImageView(image: UIImage(systemName: imageName))
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.contentMode = .scaleAspectFit
-        iconView.tintColor = AppTheme.primaryColor
+        iconView.tintColor = .white
         
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = sectionTitle
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-        titleLabel.textColor = AppTheme.bodyTextColor
+        titleLabel.textColor = .white.withAlphaComponent(0.8)
         
         let contentLabel = UILabel()
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
         contentLabel.text = content
         contentLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        contentLabel.textColor = detailsColor ?? AppTheme.titleTextColor
+        contentLabel.textColor = detailsColor ?? .white
         contentLabel.numberOfLines = 0
         
         sectionView.addSubview(iconView)
@@ -677,25 +858,25 @@ class EarthquakeDetailsViewController: UIViewController {
         
         let infoView = UIView()
         infoView.translatesAutoresizingMaskIntoConstraints = false
-        infoView.backgroundColor = AppTheme.tertiaryBackgroundColor
-        infoView.layer.cornerRadius = 12
+        infoView.backgroundColor = UIColor(red: 0.0/255.0, green: 60.0/255.0, blue: 120.0/255.0, alpha: 0.5)
+        infoView.layer.cornerRadius = 16
         
         let infoIcon = UIImageView(image: UIImage(systemName: "info.circle.fill"))
         infoIcon.translatesAutoresizingMaskIntoConstraints = false
         infoIcon.contentMode = .scaleAspectFit
-        infoIcon.tintColor = AppTheme.primaryColor
+        infoIcon.tintColor = .white
         
         let infoTitle = UILabel()
         infoTitle.translatesAutoresizingMaskIntoConstraints = false
         infoTitle.text = "Büyüklük Ölçeği Hakkında"
         infoTitle.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
-        infoTitle.textColor = AppTheme.primaryColor
+        infoTitle.textColor = .white
         
         let infoContent = UILabel()
         infoContent.translatesAutoresizingMaskIntoConstraints = false
         infoContent.text = "Richter ölçeği (ML): Deprem büyüklüğünün logaritmik ölçeğidir. Her 1.0 değerindeki artış, yaklaşık 10 kat daha fazla sarsıntı genliği ve 32 kat daha fazla enerji anlamına gelir.\n\n3.0 altı: Genellikle hissedilmez\n3.0-3.9: Hafif hissedilir\n4.0-4.9: Orta şiddette, eşyalar sallanabilir\n5.0-5.9: Hasar verebilir\n6.0+: Önemli hasar potansiyeli"
         infoContent.font = UIFont.systemFont(ofSize: 14)
-        infoContent.textColor = AppTheme.bodyTextColor
+        infoContent.textColor = .white.withAlphaComponent(0.9)
         infoContent.numberOfLines = 0
         
         infoView.addSubview(infoIcon)
@@ -758,24 +939,24 @@ class EmptyStateView: UIView {
     private func setupView(image: UIImage, title: String, message: String) {
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = AppTheme.secondaryBackgroundColor
+        containerView.backgroundColor = UIColor.white.withAlphaComponent(0.1)
         containerView.layer.cornerRadius = 16
         
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFit
         imageView.image = image
-        imageView.tintColor = AppTheme.primaryColor
+        imageView.tintColor = .white
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
         titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        titleLabel.textColor = AppTheme.titleTextColor
+        titleLabel.textColor = .white
         titleLabel.textAlignment = .center
         
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.text = message
         messageLabel.font = UIFont.systemFont(ofSize: 14)
-        messageLabel.textColor = AppTheme.bodyTextColor
+        messageLabel.textColor = .white.withAlphaComponent(0.9)
         messageLabel.textAlignment = .center
         messageLabel.numberOfLines = 0
         

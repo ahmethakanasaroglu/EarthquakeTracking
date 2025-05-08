@@ -156,7 +156,6 @@ class PersonalizedViewController: UIViewController {
         super.viewWillDisappear(animated)
         
         // TabBar'ı eski haline döndür
-        resetTabBarAppearance()
     }
     
     // MARK: - Setup
