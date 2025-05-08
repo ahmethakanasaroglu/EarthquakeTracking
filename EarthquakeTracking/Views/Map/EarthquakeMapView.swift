@@ -178,12 +178,13 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func performFocusOnEarthquake(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
-
+        // Haritayı deprem konumuna odakla
         let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
         mapView.setRegion(region, animated: true)
         
         var targetAnnotation: EarthquakeAnnotation? = nil
         
+        // Deprem için mevcut annotation'ı bul
         for annotation in mapView.annotations {
             if let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
                 if abs(earthquakeAnnotation.coordinate.latitude - coordinate.latitude) < 0.00001 &&
@@ -194,6 +195,7 @@ class EarthquakeMapViewController: UIViewController {
             }
         }
         
+        // Eğer annotation yoksa, yeni bir tane oluştur
         if targetAnnotation == nil {
             targetAnnotation = EarthquakeAnnotation(coordinate: coordinate, earthquake: earthquake)
             mapView.addAnnotation(targetAnnotation!)
@@ -208,13 +210,24 @@ class EarthquakeMapViewController: UIViewController {
             )
             annotation.isSelected = true
             
+            // Deprem modeldeki seçili deprem olarak kaydedilmeli
+            viewModel.selectEarthquake(annotation)
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                if let annotationView = self?.mapView.view(for: annotation) {
-                    self?.highlightSelectedAnnotation(annotationView)
-                    self?.selectedAnnotationView = annotationView
+                guard let self = self else { return }
+                
+                if let annotationView = self.mapView.view(for: annotation) {
+                    self.highlightSelectedAnnotation(annotationView)
+                    self.selectedAnnotationView = annotationView
                     
-                    if let earthquake = self?.viewModel.selectedEarthquake {
-                        self?.updatePopupView(with: earthquake)
+                    // Popup'ı hemen göster - bu satır çok önemli!
+                    if let earthquake = self.viewModel.selectedEarthquake {
+                        self.updatePopupView(with: earthquake)
+                        
+                        // Popup'ın konumunu annotation'a göre ayarla
+                        if let selectedView = self.selectedAnnotationView {
+                            self.positionPopupRelativeToAnnotation(selectedView)
+                        }
                     }
                 }
             }
@@ -271,9 +284,7 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func highlightSelectedAnnotation(_ view: MKAnnotationView) {
-
         UIView.animate(withDuration: 0.3) {
-
             view.transform = CGAffineTransform(scaleX: 2.0, y: 2.0)
         }
         
@@ -289,7 +300,6 @@ class EarthquakeMapViewController: UIViewController {
         view.layer.zPosition = 1000
         
         if let markerView = view as? MKMarkerAnnotationView {
-
             markerView.glyphImage = UIImage(systemName: "target")
             markerView.glyphTintColor = .white
             
@@ -309,14 +319,12 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     @objc private func handleMapTap(_ gestureRecognizer: UITapGestureRecognizer) {
-
         let touchPoint = gestureRecognizer.location(in: mapView)
         let touchCoordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
         
         let touchedAnnotations = mapView.annotations.filter { annotation in
             guard let annotationView = mapView.view(for: annotation) else { return false }
             let annotationPoint = mapView.convert(annotation.coordinate, toPointTo: mapView)
-
             let distance = sqrt(pow(touchPoint.x - annotationPoint.x, 2) + pow(touchPoint.y - annotationPoint.y, 2))
             return distance < 30
         }
@@ -420,7 +428,6 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func setupBindings() {
-
         viewModel.delegate = self
         
         NotificationCenter.default.addObserver(
@@ -492,7 +499,6 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func updateMapAnnotations() {
-
         let existingAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
         mapView.removeAnnotations(existingAnnotations)
         
@@ -541,7 +547,6 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func positionPopupRelativeToAnnotation(_ annotationView: MKAnnotationView) {
-
         let annotationPoint = mapView.convert(annotationView.annotation!.coordinate, toPointTo: view)
         
         let annotationHeight = annotationView.frame.height * annotationView.transform.a
@@ -569,7 +574,6 @@ class EarthquakeMapViewController: UIViewController {
         let estimatedPopupHeight = 200
         
         if let constraint = popupBottomConstraint, constraint.constant + CGFloat(estimatedPopupHeight) > legendViewTop {
-
             popupBottomConstraint?.constant = legendViewTop - CGFloat(estimatedPopupHeight) - 20
         }
         
