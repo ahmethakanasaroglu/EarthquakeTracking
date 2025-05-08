@@ -303,7 +303,7 @@ class EarthquakeMapViewController: UIViewController {
             markerView.glyphImage = UIImage(systemName: "target")
             markerView.glyphTintColor = .white
             
-            markerView.markerTintColor = UIColor.systemPurple
+            markerView.markerTintColor = UIColor.systemRed
             
             markerView.layer.shadowColor = UIColor.white.cgColor
             markerView.layer.shadowOpacity = 1.0
