@@ -161,23 +161,18 @@ class PersonalizedViewController: UIViewController {
     
     // MARK: - Setup
     private func setupBackground() {
+        // Eski gradyan kodu yerine AppTheme kullan
+        backgroundGradientLayer.colors = [
+            AppTheme.primaryColor.cgColor,
+            AppTheme.primaryLightColor.cgColor
+        ]
         view.layer.insertSublayer(backgroundGradientLayer, at: 0)
     }
     
     private func setupNavigationBarAppearance() {
         if let navigationBar = self.navigationController?.navigationBar {
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            
-            // Daha açık turuncu navigasyon rengi
-            appearance.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0)
-            
-            // Navigation bar öğeleri
-            appearance.titleTextAttributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white,
-                NSAttributedString.Key.font: UIFont.systemFont(ofSize: 18, weight: .bold)
-            ]
-            
+            // AppTheme'den navigation bar görünümünü al
+            let appearance = AppTheme.configureNavigationBarAppearance()
             navigationBar.standardAppearance = appearance
             navigationBar.scrollEdgeAppearance = appearance
             navigationBar.compactAppearance = appearance
@@ -251,36 +246,11 @@ class PersonalizedViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Tab bar'ı indigo yap
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            
-            // Daha açık İndigo rengi
-            appearance.backgroundColor = UIColor(red: 100.0/255.0, green: 40.0/255.0, blue: 160.0/255.0, alpha: 1.0)
-            
-            // Tab bar öğeleri
-            let itemAppearance = UITabBarItemAppearance()
-            
-            // Normal durum renkleri
-            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
-            itemAppearance.normal.titleTextAttributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
-            ]
-            
-            // Seçili durum renkleri
-            itemAppearance.selected.iconColor = .white
-            itemAppearance.selected.titleTextAttributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white
-            ]
-            
-            appearance.stackedLayoutAppearance = itemAppearance
-            appearance.inlineLayoutAppearance = itemAppearance
-            appearance.compactInlineLayoutAppearance = itemAppearance
-            
-            tabBar.standardAppearance = appearance
+            // AppTheme'den tab bar görünümünü al
+            tabBar.standardAppearance = AppTheme.configureTabBarAppearance()
             
             if #available(iOS 15.0, *) {
-                tabBar.scrollEdgeAppearance = appearance
+                tabBar.scrollEdgeAppearance = tabBar.standardAppearance
             }
         }
     }
