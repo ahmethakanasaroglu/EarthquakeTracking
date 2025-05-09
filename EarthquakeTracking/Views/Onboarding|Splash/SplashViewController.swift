@@ -26,12 +26,12 @@ class SplashViewController: UIViewController {
         
         waveView.translatesAutoresizingMaskIntoConstraints = false
         waveView.backgroundColor = .clear
-        waveView.waveColor = AppTheme.primaryColor.withAlphaComponent(0.6)
-        waveView.secondaryWaveColor = AppTheme.primaryLightColor.withAlphaComponent(0.4)
+        waveView.waveColor = AppTheme.indigoColor.withAlphaComponent(0.6)
+        waveView.secondaryWaveColor = AppTheme.indigoLightColor.withAlphaComponent(0.4)
         view.addSubview(waveView)
         
         logoContainerView.translatesAutoresizingMaskIntoConstraints = false
-        logoContainerView.backgroundColor = AppTheme.primaryColor
+        logoContainerView.backgroundColor = AppTheme.indigoColor
         logoContainerView.layer.cornerRadius = 50
         logoContainerView.clipsToBounds = true
         logoContainerView.alpha = 0
@@ -46,7 +46,7 @@ class SplashViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "DEPREM"
         titleLabel.font = UIFont.systemFont(ofSize: 42, weight: .heavy)
-        titleLabel.textColor = AppTheme.primaryColor
+        titleLabel.textColor = AppTheme.indigoColor
         titleLabel.textAlignment = .center
         titleLabel.alpha = 0
         view.addSubview(titleLabel)
@@ -163,8 +163,8 @@ class SplashViewController: UIViewController {
 
 // MARK: - Wave Animation View
 class WaveAnimationView: UIView {
-    var waveColor = UIColor.blue.withAlphaComponent(0.5)
-    var secondaryWaveColor = UIColor.blue.withAlphaComponent(0.3)
+    var waveColor = UIColor.blue.withAlphaComponent(0.4)
+    var secondaryWaveColor = UIColor.blue.withAlphaComponent(0.4)
     
     private var displayLink: CADisplayLink?
     private var startTime: CFTimeInterval = 0

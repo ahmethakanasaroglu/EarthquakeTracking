@@ -163,8 +163,8 @@ class PersonalizedViewController: UIViewController {
     private func setupBackground() {
         // Eski gradyan kodu yerine AppTheme kullan
         backgroundGradientLayer.colors = [
-            AppTheme.primaryColor.cgColor,
-            AppTheme.primaryLightColor.cgColor
+            AppTheme.indigoColor.cgColor,
+            AppTheme.indigoLightColor.cgColor
         ]
         view.layer.insertSublayer(backgroundGradientLayer, at: 0)
     }

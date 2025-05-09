@@ -76,7 +76,7 @@ class StatisticsViewController: UIViewController {
         contentView.translatesAutoresizingMaskIntoConstraints = false
         
         headerView.translatesAutoresizingMaskIntoConstraints = false
-        headerView.backgroundColor = AppTheme.primaryColor
+        headerView.backgroundColor = AppTheme.indigoColor
         headerView.layer.cornerRadius = 16
         
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -143,7 +143,7 @@ class StatisticsViewController: UIViewController {
         timelineChartView.backgroundColor = .white
         
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        activityIndicator.color = AppTheme.primaryColor
+        activityIndicator.color = AppTheme.indigoColor
         activityIndicator.hidesWhenStopped = true
         activityIndicator.startAnimating()
         
@@ -476,7 +476,7 @@ class StatisticsViewController: UIViewController {
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
         valueLabel.text = value
         valueLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        valueLabel.textColor = AppTheme.primaryColor
+        valueLabel.textColor = AppTheme.indigoColor
         valueLabel.textAlignment = .center
         
         let titleLabel = UILabel()
@@ -529,7 +529,7 @@ class StatisticsViewController: UIViewController {
         ])
         
         for (index, data) in regionCountData.prefix(7).enumerated() {
-            let barView = createBarView(title: data.region, value: data.count, maxValue: regionCountData.first?.count ?? 100, color: AppTheme.primaryColor)
+            let barView = createBarView(title: data.region, value: data.count, maxValue: regionCountData.first?.count ?? 100, color: AppTheme.indigoColor)
             stackView.addArrangedSubview(barView)
         }
     }

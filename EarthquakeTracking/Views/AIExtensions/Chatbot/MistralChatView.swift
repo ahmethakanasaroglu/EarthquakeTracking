@@ -135,8 +135,8 @@ class MistralChatViewController: UIViewController {
     private func setupGradientBackground() {
         
         gradientLayer.colors = [
-            AppTheme.primaryColor.cgColor,
-            AppTheme.primaryLightColor.cgColor
+            AppTheme.indigoColor.cgColor,
+            AppTheme.indigoLightColor.cgColor
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)

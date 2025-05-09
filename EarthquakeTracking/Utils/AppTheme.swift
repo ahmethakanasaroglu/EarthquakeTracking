@@ -5,6 +5,13 @@ struct AppTheme {
     static let primaryColor = UIColor(red: 0/255, green: 101/255, blue: 163/255, alpha: 1) // Deep Blue
     static let primaryLightColor = UIColor(red: 41/255, green: 128/255, blue: 185/255, alpha: 1) // Medium Blue
     
+    // AppTheme'e eklemek için indigo renk kodları
+    static let indigoColor = UIColor(red: 75/255, green: 0/255, blue: 130/255, alpha: 1) // Deep Indigo
+    static let indigoLightColor = UIColor(red: 93/255, green: 107/255, blue: 230/255, alpha: 1) // Light Indigo
+    
+    static let orangeColor = UIColor(red: 230/255, green: 126/255, blue: 34/255, alpha: 1) // Deep Soft Orange
+    static let orangeLightColor = UIColor(red: 246/255, green: 185/255, blue: 59/255, alpha: 1) // Light Soft Orange
+    
     // MARK: - Secondary Colors
     static let secondaryColor = UIColor(red: 231/255, green: 76/255, blue: 60/255, alpha: 1) // Warning Red
     static let accentColor = UIColor(red: 241/255, green: 196/255, blue: 15/255, alpha: 1) // Alert Yellow
@@ -82,7 +89,7 @@ struct AppTheme {
         
         switch style {
         case .primary:
-            button.backgroundColor = primaryColor
+            button.backgroundColor = indigoColor
             button.setTitleColor(.white, for: .normal)
             
             button.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
@@ -92,9 +99,9 @@ struct AppTheme {
             button.layer.masksToBounds = false
         case .secondary:
             button.backgroundColor = .clear
-            button.setTitleColor(primaryColor, for: .normal)
+            button.setTitleColor(indigoColor, for: .normal)
             button.layer.borderWidth = 1
-            button.layer.borderColor = primaryColor.cgColor
+            button.layer.borderColor = indigoColor.cgColor
         case .accent:
             button.backgroundColor = accentColor
             button.setTitleColor(.black, for: .normal)
@@ -140,7 +147,7 @@ struct AppTheme {
     static func configureNavigationBarAppearance() -> UINavigationBarAppearance {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = primaryColor
+        appearance.backgroundColor = orangeColor
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
         

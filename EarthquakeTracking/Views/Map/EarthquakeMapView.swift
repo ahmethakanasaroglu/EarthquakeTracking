@@ -21,7 +21,7 @@ class EarthquakeMapViewController: UIViewController {
         let indicator = UIActivityIndicatorView(style: .large)
         indicator.translatesAutoresizingMaskIntoConstraints = false
         indicator.hidesWhenStopped = true
-        indicator.color = AppTheme.primaryColor
+        indicator.color = AppTheme.indigoColor
         return indicator
     }()
     
@@ -50,9 +50,9 @@ class EarthquakeMapViewController: UIViewController {
     private lazy var magnitudeCircleView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = AppTheme.primaryColor
+        view.backgroundColor = AppTheme.indigoColor
         view.layer.cornerRadius = 25
-        view.layer.shadowColor = AppTheme.primaryColor.cgColor
+        view.layer.shadowColor = AppTheme.indigoColor.cgColor
         view.layer.shadowOffset = CGSize(width: 0, height: 2)
         view.layer.shadowRadius = 4
         view.layer.shadowOpacity = 0.3
@@ -112,7 +112,7 @@ class EarthquakeMapViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(systemName: "map"), for: .normal)
-        button.tintColor = AppTheme.primaryColor
+        button.tintColor = AppTheme.indigoColor
         button.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.9)
         button.layer.cornerRadius = 20
         button.layer.shadowColor = UIColor.black.cgColor
@@ -136,7 +136,7 @@ class EarthquakeMapViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(systemName: "line.horizontal.3.decrease.circle.fill"), for: .normal)
-        button.tintColor = AppTheme.primaryColor
+        button.tintColor = AppTheme.indigoColor
         button.backgroundColor = AppTheme.backgroundColor.withAlphaComponent(0.9)
         button.layer.cornerRadius = 20
         button.layer.shadowColor = UIColor.black.cgColor
@@ -877,7 +877,7 @@ class InfoRowView: UIView {
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.image = UIImage(systemName: iconName)
-        iconImageView.tintColor = AppTheme.primaryColor
+        iconImageView.tintColor = AppTheme.indigoColor
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title + ":"

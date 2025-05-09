@@ -30,8 +30,8 @@ class AIExtensionsViewController: UIViewController {
    private func setupGradientBackground() {
        // İndigo tonlarıyla gradient oluştur
        gradientLayer.colors = [
-           AppTheme.primaryColor.cgColor,
-           AppTheme.primaryLightColor.cgColor
+        AppTheme.indigoColor.cgColor,
+        AppTheme.indigoLightColor.cgColor
        ]
        gradientLayer.locations = [0.0, 1.0]
        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -92,18 +92,18 @@ class AIExtensionsViewController: UIViewController {
    private func setupHeader() {
        let headerView = UIView()
        headerView.translatesAutoresizingMaskIntoConstraints = false
-       headerView.backgroundColor = AppTheme.primaryColor
+       headerView.backgroundColor = AppTheme.indigoColor
        headerView.layer.cornerRadius = 16
        
-       headerView.layer.shadowColor = AppTheme.primaryColor.cgColor
+       headerView.layer.shadowColor = AppTheme.indigoColor.cgColor
        headerView.layer.shadowOffset = CGSize(width: 0, height: 4)
        headerView.layer.shadowRadius = 8
        headerView.layer.shadowOpacity = 0.3
        
        let gradientLayer = CAGradientLayer()
        gradientLayer.colors = [
-           AppTheme.primaryColor.cgColor,
-           AppTheme.primaryLightColor.cgColor
+        AppTheme.indigoColor.cgColor,
+        AppTheme.indigoLightColor.cgColor
        ]
        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
        gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
@@ -213,7 +213,7 @@ class AIExtensionsViewController: UIViewController {
        
        let lineView = UIView()
        lineView.translatesAutoresizingMaskIntoConstraints = false
-       lineView.backgroundColor = AppTheme.primaryColor
+       lineView.backgroundColor = AppTheme.indigoColor
        
        containerView.addSubview(titleLabel)
        containerView.addSubview(lineView)
@@ -243,7 +243,7 @@ class AIExtensionsViewController: UIViewController {
        
        let iconContainer = UIView()
        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-       iconContainer.backgroundColor = AppTheme.primaryColor
+       iconContainer.backgroundColor = AppTheme.indigoColor
        iconContainer.layer.cornerRadius = 30
        
        let iconImageView = UIImageView(image: UIImage(systemName: "message.fill"))
@@ -342,7 +342,7 @@ class AIExtensionsViewController: UIViewController {
        comingSoonLabel.translatesAutoresizingMaskIntoConstraints = false
        comingSoonLabel.text = "YAKINDA"
        comingSoonLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-       comingSoonLabel.textColor = AppTheme.primaryColor
+       comingSoonLabel.textColor = AppTheme.indigoColor
        comingSoonLabel.textAlignment = .center
        
        let iconContainer = UIView()
@@ -426,7 +426,7 @@ class AIExtensionsViewController: UIViewController {
        comingSoonLabel.translatesAutoresizingMaskIntoConstraints = false
        comingSoonLabel.text = "YAKINDA"
        comingSoonLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
-       comingSoonLabel.textColor = AppTheme.primaryColor
+       comingSoonLabel.textColor = AppTheme.indigoColor
        comingSoonLabel.textAlignment = .center
        
        let iconContainer = UIView()

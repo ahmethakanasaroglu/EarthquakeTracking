@@ -41,7 +41,7 @@ class OnboardingViewController: UIViewController {
         pageControl.numberOfPages = numberOfPages
         pageControl.currentPage = 0
         pageControl.pageIndicatorTintColor = AppTheme.bodyTextColor.withAlphaComponent(0.3)
-        pageControl.currentPageIndicatorTintColor = AppTheme.primaryColor
+        pageControl.currentPageIndicatorTintColor = AppTheme.indigoColor
         pageControl.addTarget(self, action: #selector(pageControlTapped(_:)), for: .valueChanged)
         view.addSubview(pageControl)
         
@@ -84,14 +84,14 @@ class OnboardingViewController: UIViewController {
             title: "Deprem Bilgileri",
             description: "Türkiye ve dünya genelindeki son depremleri anında görüntüleyin ve harita üzerinde inceleyin.",
             image: UIImage(systemName: "list.bullet.rectangle")!,
-            color: AppTheme.primaryColor
+            color: AppTheme.indigoColor
         )
         
         let page2 = OnboardingPage(
             title: "Deprem Uyarıları",
             description: "Önem verdiğiniz bölgeleri izleyin ve belirli büyüklüğün üzerindeki depremler için kişiselleştirilmiş bildirimler alın.",
             image: UIImage(systemName: "bell.fill")!,
-            color: AppTheme.primaryLightColor
+            color: AppTheme.indigoLightColor
         )
         
         let page3 = OnboardingPage(
@@ -230,7 +230,7 @@ class OnboardingViewController: UIViewController {
             }
         } else {
             continueButton.setTitle("Devam", for: .normal)
-            continueButton.backgroundColor = AppTheme.primaryColor
+            continueButton.backgroundColor = AppTheme.indigoColor
             continueButton.transform = CGAffineTransform.identity
         }
     }

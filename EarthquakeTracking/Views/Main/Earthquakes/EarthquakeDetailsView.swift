@@ -10,8 +10,8 @@ class EarthquakeDetailsViewController: UIViewController {
         let gradientLayer = CAGradientLayer()
         // Ana ekrandaki gradient ile aynı renkleri kullanıyoruz
         gradientLayer.colors = [
-            AppTheme.primaryColor.cgColor,
-            AppTheme.primaryLightColor.cgColor
+            AppTheme.indigoColor.cgColor,
+            AppTheme.indigoLightColor.cgColor
         ]
         gradientLayer.locations = [0.0, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
@@ -63,7 +63,7 @@ class EarthquakeDetailsViewController: UIViewController {
         
         // Content view'ın arka plan rengini ana gradient'in alt rengiyle uyumlu hale getiriyoruz
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.backgroundColor = AppTheme.primaryLightColor.withAlphaComponent(0.8) // AppTheme'e uygun hale getirdik
+        contentView.backgroundColor = AppTheme.indigoLightColor.withAlphaComponent(0.8) // AppTheme'e uygun hale getirdik
         contentView.layer.cornerRadius = 24
         contentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         contentView.layer.shadowColor = UIColor.black.cgColor
