@@ -93,36 +93,11 @@ class AIExtensionsViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Tab bar'ı koyu mavi yap
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            
-            // Görseldeki koyu mavi renk
-            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
-            
-            // Tab bar öğeleri
-            let itemAppearance = UITabBarItemAppearance()
-            
-            // Normal durum renkleri
-            itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
-            itemAppearance.normal.titleTextAttributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
-            ]
-            
-            // Seçili durum renkleri
-            itemAppearance.selected.iconColor = .white
-            itemAppearance.selected.titleTextAttributes = [
-                NSAttributedString.Key.foregroundColor: UIColor.white
-            ]
-            
-            appearance.stackedLayoutAppearance = itemAppearance
-            appearance.inlineLayoutAppearance = itemAppearance
-            appearance.compactInlineLayoutAppearance = itemAppearance
-            
-            tabBar.standardAppearance = appearance
+            // AppTheme'den tab bar görünümünü al
+            tabBar.standardAppearance = AppTheme.configureTabBarAppearance()
             
             if #available(iOS 15.0, *) {
-                tabBar.scrollEdgeAppearance = appearance
+                tabBar.scrollEdgeAppearance = tabBar.standardAppearance
             }
         }
     }
