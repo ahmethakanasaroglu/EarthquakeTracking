@@ -5,6 +5,7 @@ class NotificationSettingsViewController: UIViewController {
     
     // MARK: - Properties
     private let viewModel: PersonalizedViewModel
+    private var viewComponents: [UIView] = []
     
     // MARK: - UI Elements
     private lazy var scrollView: UIScrollView = {
@@ -181,6 +182,25 @@ class NotificationSettingsViewController: UIViewController {
         updateUI()
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // View görünür olduğunda animasyonu başlat
+        animateViewComponents()
+    }
+    
+    private func animateViewComponents() {
+        // Her bir bileşeni sırayla göster
+        for (index, component) in viewComponents.enumerated() {
+            // Sıralı animasyon için gecikme hesapla
+            let delay = Double(index) * 0.1
+            
+            UIView.animate(withDuration: 0.5, delay: delay, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                component.alpha = 1.0
+                component.transform = .identity
+            }, completion: nil)
+        }
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -292,10 +312,27 @@ class NotificationSettingsViewController: UIViewController {
         
         locationsTableView.setContentHuggingPriority(.defaultLow, for: .vertical)
         locationsTableView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        
+        viewComponents = [
+            headerLabel,
+            descriptionLabel,
+            notificationsSwitchStack,
+            magnitudeSliderStack,
+            magnitudeSlider,
+            locationsLabel,
+            locationsTableView,
+            addLocationButton
+        ]
+        
+        for component in viewComponents {
+            component.alpha = 0
+            
+            component.transform = CGAffineTransform(translationX: 0, y: -50)
+        }
     }
     
     private func setupBindings() {
-
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleMonitoredLocationsUpdated),
@@ -351,6 +388,11 @@ class NotificationSettingsViewController: UIViewController {
         updateMapWithLocations()
         
         updateUIBasedOnNotificationState(isEnabled: viewModel.enableNotifications)
+        
+        mapView.alpha = 0
+        locationNameTextField.alpha = 0
+        confirmLocationButton.alpha = 0
+        cancelLocationButton.alpha = 0
     }
     
     private func updateUIBasedOnNotificationState(isEnabled: Bool) {
@@ -409,6 +451,10 @@ class NotificationSettingsViewController: UIViewController {
         
         if !viewModel.monitoredLocations.isEmpty {
             mapView.showAnnotations(annotations, animated: true)
+            // Pinlerin animasyonlu gösterimi
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.animateMapAnnotations()
+            }
         } else if let userLocation = viewModel.userLocation {
             let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
             mapView.setRegion(region, animated: true)
@@ -416,13 +462,33 @@ class NotificationSettingsViewController: UIViewController {
     }
     
     private func updateAddLocationUI(isAdding: Bool) {
-        mapView.isHidden = !isAdding
-        locationNameTextField.isHidden = !isAdding
-        confirmLocationButton.isHidden = !isAdding
-        cancelLocationButton.isHidden = !isAdding
-        addLocationButton.isHidden = isAdding
-        
         if isAdding {
+            // Harita ve form alanlarını gösterirken animasyon ekleyelim
+            mapView.isHidden = false
+            locationNameTextField.isHidden = false
+            confirmLocationButton.isHidden = false
+            cancelLocationButton.isHidden = false
+            addLocationButton.isHidden = true
+            
+            // Önce alpha'yı 0 yapıp, sonra animasyonla gösterelim
+            mapView.alpha = 0
+            locationNameTextField.alpha = 0
+            confirmLocationButton.alpha = 0
+            cancelLocationButton.alpha = 0
+            
+            // Form alanlarını yukarıdan aşağıya doğru sırayla gösterelim
+            let formComponents = [mapView, locationNameTextField, confirmLocationButton, cancelLocationButton]
+            
+            for (index, component) in formComponents.enumerated() {
+                let delay = Double(index) * 0.15
+                
+                UIView.animate(withDuration: 0.5, delay: delay, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                    component.alpha = 1.0
+                    // Yukarıdan aşağıya efekti
+                    component.transform = .identity
+                }, completion: nil)
+            }
+            
             locationNameTextField.text = ""
             
             if let userLocation = viewModel.userLocation {
@@ -436,6 +502,41 @@ class NotificationSettingsViewController: UIViewController {
                 annotation.title = "Yeni Konum"
                 mapView.addAnnotation(annotation)
             }
+        } else {
+            // Form alanlarını gizlerken de animasyon ekleyelim
+            UIView.animate(withDuration: 0.3, animations: {
+                self.mapView.alpha = 0
+                self.locationNameTextField.alpha = 0
+                self.confirmLocationButton.alpha = 0
+                self.cancelLocationButton.alpha = 0
+            }, completion: { _ in
+                self.mapView.isHidden = true
+                self.locationNameTextField.isHidden = true
+                self.confirmLocationButton.isHidden = true
+                self.cancelLocationButton.isHidden = true
+                self.addLocationButton.isHidden = false
+                
+                // Add Location butonunu tekrar gösterirken animasyon ekleyelim
+                self.addLocationButton.alpha = 0
+                self.addLocationButton.transform = CGAffineTransform(translationX: 0, y: 20)
+                
+                UIView.animate(withDuration: 0.4, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                    self.addLocationButton.alpha = 1.0
+                    self.addLocationButton.transform = .identity
+                }, completion: nil)
+            })
+        }
+    }
+    
+    private func animateMapAnnotations() {
+        // Harita üzerindeki pin'lerin de animasyonlu bir şekilde gelmesini sağlar
+        for annotation in mapView.annotations {
+            let annotationView = mapView.view(for: annotation)
+            annotationView?.transform = CGAffineTransform(translationX: 0, y: -100)
+            
+            UIView.animate(withDuration: 0.5, delay: 0.2, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                annotationView?.transform = .identity
+            }, completion: nil)
         }
     }
     
@@ -453,7 +554,7 @@ class NotificationSettingsViewController: UIViewController {
     }
     
     @objc private func magnitudeSliderChanged(_ sender: UISlider) {
-        let value = Double(round(sender.value * 10) / 10) 
+        let value = Double(round(sender.value * 10) / 10)
         viewModel.setMagnitudeThreshold(value)
         magnitudeValueLabel.text = String(format: "%.1f", value)
         viewModel.saveUserPreferences()
@@ -510,6 +611,17 @@ extension NotificationSettingsViewController: UITableViewDelegate, UITableViewDa
         }
         
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        // Hücrelerin de sırayla görünmesini sağlayalım
+        cell.alpha = 0
+        cell.transform = CGAffineTransform(translationX: 0, y: 20)
+        
+        UIView.animate(withDuration: 0.4, delay: Double(indexPath.row) * 0.1, options: [], animations: {
+            cell.alpha = 1
+            cell.transform = .identity
+        }, completion: nil)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
