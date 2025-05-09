@@ -8,6 +8,10 @@ class RiskModelViewController: UIViewController {
     
     private var riskRegions: [RiskRegion] = []
     
+    private var viewComponents: [UIView] = []
+    private var mapRegionOverlays: [MKCircle] = []
+    private var isFirstLoad = true
+    
     // MARK: - UI Elements
     private lazy var mapView: MKMapView = {
         let mapView = MKMapView()
@@ -178,6 +182,48 @@ class RiskModelViewController: UIViewController {
         updateLoadingState(isLoading: true)
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // İlk yükleme kontrolü
+        if isFirstLoad {
+            // Ana bileşenlerin animasyonu
+            animateUIComponents()
+            isFirstLoad = false
+        }
+    }
+    
+    private func animateUIComponents() {
+        // Info Container animasyonu
+        UIView.animate(withDuration: 0.6, delay: 0.2, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+            self.infoContainerView.alpha = 1
+            self.infoContainerView.transform = .identity
+        }, completion: nil)
+        
+        // Legend View animasyonu
+        UIView.animate(withDuration: 0.5, delay: 0.4, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: [], animations: {
+            self.legendView.alpha = 1
+            self.legendView.transform = .identity
+        }, completion: nil)
+    }
+    
+    private func animateOverlays() {
+        // Mevcut tüm overlayleri gizle
+        for overlay in mapRegionOverlays {
+            let renderer = mapView.renderer(for: overlay) as? MKCircleRenderer
+            renderer?.alpha = 0
+        }
+        
+        // Sırayla gösterme animasyonu
+        for (index, overlay) in mapRegionOverlays.enumerated() {
+            let delay = Double(index) * 0.03 // Her bölge için küçük bir gecikme
+            UIView.animate(withDuration: 0.4, delay: delay, options: [], animations: {
+                let renderer = self.mapView.renderer(for: overlay) as? MKCircleRenderer
+                renderer?.alpha = 1.0
+            }, completion: nil)
+        }
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
@@ -229,7 +275,7 @@ class RiskModelViewController: UIViewController {
         legendView.addSubview(lowRiskLabel)
         
         NSLayoutConstraint.activate([
-
+            
             mapView.topAnchor.constraint(equalTo: view.topAnchor),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -303,10 +349,22 @@ class RiskModelViewController: UIViewController {
             loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
+        
+        infoContainerView.alpha = 0
+        infoContainerView.transform = CGAffineTransform(translationX: 0, y: 100)
+        
+        legendView.alpha = 0
+        legendView.transform = CGAffineTransform(translationX: 50, y: 0)
+        
+        // Animasyonlu gösterim için UI bileşenlerini bir diziye ekleyelim
+        viewComponents = [
+            infoContainerView,
+            legendView
+        ]
     }
     
     private func setupBindings() {
-
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleRiskDataChanged(_:)),
@@ -328,16 +386,25 @@ class RiskModelViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            if let riskLevel = userInfo["level"] as? RiskLevel {
-                self.updateRiskUI(riskLevel: riskLevel)
-            }
-            
+            // Loading state
             if let isLoading = userInfo["isLoading"] as? Bool {
                 self.updateLoadingState(isLoading: isLoading)
             }
             
+            // Risk level with animation
+            if let riskLevel = userInfo["level"] as? RiskLevel {
+                // Hafif bir gecikme ekleyerek yükleme göstergesi görünsün
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.updateRiskUI(riskLevel: riskLevel)
+                }
+            }
+            
+            // Map overlays with animation
             if let coordinates = userInfo["coordinates"] as? [CLLocationCoordinate2D] {
-                self.updateMapOverlays(coordinates: coordinates)
+                // Hafif bir gecikme ekleyerek sıralı gösterilsin
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.updateMapOverlays(coordinates: coordinates)
+                }
             }
         }
     }
@@ -349,8 +416,11 @@ class RiskModelViewController: UIViewController {
             guard let self = self else { return }
             
             if let location = userInfo["location"] as? CLLocationCoordinate2D {
+                // Harita geçişi animasyonlu olsun
                 let region = MKCoordinateRegion(center: location, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
-                self.mapView.setRegion(region, animated: true)
+                UIView.animate(withDuration: 0.8) {
+                    self.mapView.setRegion(region, animated: false)
+                }
             }
         }
     }
@@ -358,47 +428,78 @@ class RiskModelViewController: UIViewController {
     // MARK: - UI Updates
     
     private func updateRiskUI(riskLevel: RiskLevel) {
-        riskLevelLabel.text = riskLevel.rawValue
+        // Animasyonlu görünüm değişiklikleri
+        UIView.transition(with: riskLevelLabel, duration: 0.3, options: .transitionCrossDissolve, animations: {
+            self.riskLevelLabel.text = riskLevel.rawValue
+            
+            switch riskLevel {
+            case .high:
+                self.riskLevelLabel.textColor = .systemRed
+                self.descriptionLabel.text = "Bu bölge, yüksek sismik aktivite ve jeolojik yapı nedeniyle deprem riski taşımaktadır. Bina güvenliğinize ve acil durum planlarınıza özen gösterin."
+                self.earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 27 deprem"
+                self.lastBigEarthquakeLabel.text = "En son büyük deprem: 2019.02.20 (M 6.8)"
+            case .medium:
+                self.riskLevelLabel.textColor = .systemOrange
+                self.descriptionLabel.text = "Bu bölgede orta düzeyde deprem riski bulunmaktadır. Temel deprem güvenlik önlemlerini almayı unutmayın."
+                self.earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 15 deprem"
+                self.lastBigEarthquakeLabel.text = "En son büyük deprem: 2013.05.14 (M 5.3)"
+            case .low:
+                self.riskLevelLabel.textColor = .systemGreen
+                self.descriptionLabel.text = "Bu bölgede görece düşük deprem riski bulunmaktadır, ancak yine de temel güvenlik önlemlerini ihmal etmeyin."
+                self.earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 5 deprem"
+                self.lastBigEarthquakeLabel.text = "En son büyük deprem: 1990.03.25 (M 5.1)"
+            case .unknown:
+                self.riskLevelLabel.textColor = .systemGray
+                self.descriptionLabel.text = "Bu bölge için yeterli veri bulunmamaktadır. Genel deprem önlemlerini almayı unutmayın."
+                self.earthquakeCountLabel.text = "Deprem geçmişi verisi bulunamadı"
+                self.lastBigEarthquakeLabel.text = "En son büyük deprem kaydı yok"
+            }
+        }, completion: nil)
         
-        switch riskLevel {
-        case .high:
-            riskLevelLabel.textColor = .systemRed
-            descriptionLabel.text = "Bu bölge, yüksek sismik aktivite ve jeolojik yapı nedeniyle deprem riski taşımaktadır. Bina güvenliğinize ve acil durum planlarınıza özen gösterin."
-            earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 27 deprem"
-            lastBigEarthquakeLabel.text = "En son büyük deprem: 2019.02.20 (M 6.8)"
-        case .medium:
-            riskLevelLabel.textColor = .systemOrange
-            descriptionLabel.text = "Bu bölgede orta düzeyde deprem riski bulunmaktadır. Temel deprem güvenlik önlemlerini almayı unutmayın."
-            earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 15 deprem"
-            lastBigEarthquakeLabel.text = "En son büyük deprem: 2013.05.14 (M 5.3)"
-        case .low:
-            riskLevelLabel.textColor = .systemGreen
-            descriptionLabel.text = "Bu bölgede görece düşük deprem riski bulunmaktadır, ancak yine de temel güvenlik önlemlerini ihmal etmeyin."
-            earthquakeCountLabel.text = "Son 50 yılda 5.0+ büyüklüğünde 5 deprem"
-            lastBigEarthquakeLabel.text = "En son büyük deprem: 1990.03.25 (M 5.1)"
-        case .unknown:
-            riskLevelLabel.textColor = .systemGray
-            descriptionLabel.text = "Bu bölge için yeterli veri bulunmamaktadır. Genel deprem önlemlerini almayı unutmayın."
-            earthquakeCountLabel.text = "Deprem geçmişi verisi bulunamadı"
-            lastBigEarthquakeLabel.text = "En son büyük deprem kaydı yok"
+        // Risk seviyesi değiştiğinde info panel vurgulama animasyonu
+        UIView.animate(withDuration: 0.3, animations: {
+            self.infoContainerView.transform = CGAffineTransform(scaleX: 1.03, y: 1.03)
+        }) { _ in
+            UIView.animate(withDuration: 0.3) {
+                self.infoContainerView.transform = .identity
+            }
         }
     }
     
     private func updateLoadingState(isLoading: Bool) {
         if isLoading {
             loadingIndicator.startAnimating()
+            
+            // Yükleme sırasında info panel soluklaştır
+            UIView.animate(withDuration: 0.3) {
+                self.infoContainerView.alpha = 0.7
+            }
+            
             if viewModel.riskLevelForCurrentLocation == .unknown {
-                riskLevelLabel.text = "Analiz ediliyor..."
-                riskLevelLabel.textColor = .systemGray
+                UIView.transition(with: riskLevelLabel, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                    self.riskLevelLabel.text = "Analiz ediliyor..."
+                    self.riskLevelLabel.textColor = .systemGray
+                }, completion: nil)
             }
         } else {
-            loadingIndicator.stopAnimating()
+            // Yükleme tamamlandığında normal görünüme dön
+            UIView.animate(withDuration: 0.3) {
+                self.infoContainerView.alpha = 1.0
+            }
+            
+            UIView.animate(withDuration: 0.5, animations: {
+                self.loadingIndicator.alpha = 0
+            }) { _ in
+                self.loadingIndicator.stopAnimating()
+                self.loadingIndicator.alpha = 1
+            }
         }
     }
     
     private func updateMapOverlays(coordinates: [CLLocationCoordinate2D]) {
         // Eski katmanları temizle
         mapView.removeOverlays(mapView.overlays)
+        mapRegionOverlays.removeAll()
         riskRegions.removeAll()
         
         if coordinates.isEmpty {
@@ -407,7 +508,11 @@ class RiskModelViewController: UIViewController {
         
         if let userLocation = viewModel.userLocation {
             let region = MKCoordinateRegion(center: userLocation, span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1))
-            mapView.setRegion(region, animated: true)
+            
+            // Harita animasyonlu geçiş
+            UIView.animate(withDuration: 0.8) {
+                self.mapView.setRegion(region, animated: false)
+            }
             
             var userRiskValue: Double
             var userRiskLevel: RiskLevel
@@ -442,6 +547,12 @@ class RiskModelViewController: UIViewController {
             let circle = MKCircle(center: region.coordinate, radius: region.radius)
             circle.title = String(region.riskValue)
             mapView.addOverlay(circle)
+            mapRegionOverlays.append(circle)
+        }
+        
+        // Bölgeleri animasyonlu göster
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.animateOverlays()
         }
     }
     
@@ -524,8 +635,8 @@ class RiskModelViewController: UIViewController {
         let dLon = (lon2 - lon1) * .pi / 180.0
         
         let a = sin(dLat/2) * sin(dLat/2) +
-            cos(lat1 * .pi / 180.0) * cos(lat2 * .pi / 180.0) *
-            sin(dLon/2) * sin(dLon/2)
+        cos(lat1 * .pi / 180.0) * cos(lat2 * .pi / 180.0) *
+        sin(dLon/2) * sin(dLon/2)
         
         let c = 2 * atan2(sqrt(a), sqrt(1-a))
         return earthRadius * c
@@ -558,10 +669,20 @@ extension RiskModelViewController: MKMapViewDelegate {
                 renderer.lineWidth = 1.0
             }
             
+            // Başlangıçta şeffaf olsun, animasyonla gösterilecek
+            renderer.alpha = 0.0
+            
             return renderer
         }
         
         return MKOverlayRenderer(overlay: overlay)
+    }
+    
+    func mapView(_ mapView: MKMapView, didAdd renderers: [MKOverlayRenderer]) {
+        // Rendererlar eklendiğinde animasyon için gerekirse burada da tetikleyebiliriz
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.animateOverlays()
+        }
     }
 }
 
