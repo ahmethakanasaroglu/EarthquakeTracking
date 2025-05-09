@@ -9,23 +9,41 @@ class AIExtensionsViewController: UIViewController {
     // Arka plan için gradient layer
     private let gradientLayer = CAGradientLayer()
     
+    // Animasyon için gerekli property'ler
+    private var viewComponents: [UIView] = []
+    private var headerComponents: [UIView] = []
+    private var cardComponents: [UIView] = []
+    private var animationStarted = false
+    private var particleLayer: CAEmitterLayer?
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGradientBackground()
         setupUI()
+        setupParticleEffects() // Parçacık efektleri
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         gradientLayer.frame = view.bounds
+        particleLayer?.frame = view.bounds
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setupTabBarAppearance()
     }
-
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if !animationStarted {
+            startEntryAnimations()
+            animationStarted = true
+        }
+    }
+    
     // MARK: - Setup Methods
     private func setupGradientBackground() {
         // Görseldeki mavi tonlarıyla gradient oluştur
@@ -40,7 +58,39 @@ class AIExtensionsViewController: UIViewController {
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
     
-    // Ve setupTabBarAppearance metodunu AIExtensionsViewController'a ekleyin:
+    // Parçacık efekti için yeni metod
+    private func setupParticleEffects() {
+        let particleEmitter = CAEmitterLayer()
+        
+        particleEmitter.emitterPosition = CGPoint(x: view.bounds.width / 2.0, y: -50)
+        particleEmitter.emitterShape = .line
+        particleEmitter.emitterSize = CGSize(width: view.bounds.width, height: 1)
+        
+        let cell = CAEmitterCell()
+        cell.birthRate = 2.0
+        cell.lifetime = 20.0
+        cell.velocity = 20
+        cell.velocityRange = 10
+        cell.emissionLongitude = .pi
+        cell.emissionRange = .pi / 4
+        cell.spin = 0.5
+        cell.spinRange = 1.0
+        cell.scale = 0.1
+        cell.scaleRange = 0.1
+        cell.color = UIColor(white: 1.0, alpha: 0.3).cgColor
+        
+        // Küçük ışık parçacıkları için
+        let circleImage = UIImage(systemName: "circle.fill")!
+        cell.contents = circleImage.cgImage
+        cell.alphaSpeed = -0.1
+        cell.yAcceleration = 10
+        
+        particleEmitter.emitterCells = [cell]
+        
+        view.layer.insertSublayer(particleEmitter, at: 1)
+        self.particleLayer = particleEmitter
+    }
+    
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
             // Tab bar'ı koyu mavi yap
@@ -102,8 +152,13 @@ class AIExtensionsViewController: UIViewController {
         ])
         
         setupHeader()
-        
         setupAISection()
+        
+        // Tüm bileşenleri başlangıçta gizle (animasyon için)
+        for component in viewComponents {
+            component.alpha = 0
+            component.transform = CGAffineTransform(translationX: 0, y: 20)
+        }
     }
     
     private func setupHeader() {
@@ -185,6 +240,13 @@ class AIExtensionsViewController: UIViewController {
         
         headerView.layoutIfNeeded()
         gradientLayer.frame = headerView.bounds
+        
+        // Beyin ikonu için özel bir dönen animasyon
+        setupPulsingAnimation(for: iconContainerView)
+        
+        // Header'ı animasyon listelerine ekleyelim
+        viewComponents.append(headerView)
+        headerComponents = [iconContainerView, titleLabel, subtitleLabel]
     }
     
     private func setupAISection() {
@@ -216,6 +278,11 @@ class AIExtensionsViewController: UIViewController {
             safetyAssistantCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             safetyAssistantCard.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30)
         ])
+        
+        // Animasyon listelerine ekleyelim
+        viewComponents.append(sectionTitle)
+        cardComponents = [mistralCard, earthquakePredictionCard, safetyAssistantCard]
+        viewComponents.append(contentsOf: cardComponents)
     }
     
     private func createSectionTitle(title: String) -> UIView {
@@ -297,6 +364,10 @@ class AIExtensionsViewController: UIViewController {
         actionButton.setTitle("Konuşmaya Başla", for: .normal)
         actionButton.setImage(UIImage(systemName: "arrow.forward.circle.fill"), for: .normal)
         AppTheme.applyButtonStyle(to: actionButton)
+        
+        // Buton için animasyon efektleri
+        actionButton.addTarget(self, action: #selector(animateButtonTap(_:)), for: .touchDown)
+        actionButton.addTarget(self, action: #selector(animateButtonRelease(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         actionButton.addTarget(self, action: #selector(openMistralChatbot), for: .touchUpInside)
         
         iconContainer.addSubview(iconImageView)
@@ -512,9 +583,148 @@ class AIExtensionsViewController: UIViewController {
         return cardView
     }
     
+    // MARK: - Animation Methods
+    
+    private func startEntryAnimations() {
+        // Header animasyonu
+        UIView.animate(withDuration: 0.8, delay: 0.1, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: [], animations: {
+            self.viewComponents[0].alpha = 1
+            self.viewComponents[0].transform = .identity
+        }, completion: { _ in
+            // Header içindeki elementlerin tek tek belirmesi
+            self.animateHeaderComponents()
+        })
+        
+        // Başlık animasyonu
+        UIView.animate(withDuration: 0.6, delay: 0.9, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: [], animations: {
+            self.viewComponents[1].alpha = 1
+            self.viewComponents[1].transform = .identity
+        }, completion: nil)
+        
+        // Kartların kademeli olarak görünmesi
+        for (index, card) in self.cardComponents.enumerated() {
+            UIView.animate(withDuration: 0.7, delay: 1.2 + Double(index) * 0.2, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: [], animations: {
+                card.alpha = 1
+                card.transform = .identity
+            }, completion: { _ in
+                // Her kartın görünümünden sonra animasyon efekti
+                self.animateCardAppearance(card)
+            })
+        }
+    }
+    
+    private func animateHeaderComponents() {
+        // Header içindeki bileşenler için kademeli belirme animasyonu
+        for (index, component) in headerComponents.enumerated() {
+            // Başlangıç durumu
+            component.alpha = 0
+            component.transform = CGAffineTransform(translationX: -30, y: 0)
+            
+            // Animasyon
+            UIView.animate(withDuration: 0.6, delay: Double(index) * 0.15, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.5, options: [], animations: {
+                component.alpha = 1
+                component.transform = .identity
+            }, completion: nil)
+        }
+    }
+    
+    private func animateCardAppearance(_ card: UIView) {
+        // Kartın belirme animasyonu
+        UIView.animate(withDuration: 0.3, animations: {
+            card.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.2, animations: {
+                card.transform = .identity
+            })
+        })
+        
+        // İkon için parlama efekti
+        if let iconContainer = card.subviews.first(where: { $0.layer.cornerRadius == 30 }) {
+            addGlowEffect(to: iconContainer)
+        }
+    }
+    
+    // MARK: - Animation Effects
+    
+    private func setupPulsingAnimation(for view: UIView) {
+        // Daha teknolojik görünüm için beyin ikonuna nefes alan efekt ekle
+        let pulseAnimation = CABasicAnimation(keyPath: "transform.scale")
+        pulseAnimation.duration = 2.0
+        pulseAnimation.fromValue = 1.0
+        pulseAnimation.toValue = 1.1
+        pulseAnimation.autoreverses = true
+        pulseAnimation.repeatCount = .infinity
+        pulseAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        
+        view.layer.add(pulseAnimation, forKey: "pulsing")
+    }
+    
+    private func addGlowEffect(to view: UIView) {
+        // İkon etrafında kısa süreli parlama efekti
+        let glowLayer = CALayer()
+        glowLayer.frame = view.bounds
+        glowLayer.cornerRadius = view.layer.cornerRadius
+        glowLayer.backgroundColor = view.backgroundColor?.cgColor
+        glowLayer.shadowColor = view.backgroundColor?.cgColor
+        glowLayer.shadowOffset = .zero
+        glowLayer.shadowOpacity = 0
+        glowLayer.shadowRadius = 10
+        
+        view.layer.insertSublayer(glowLayer, at: 0)
+        
+        // Parlama animasyonu
+        let animation = CABasicAnimation(keyPath: "shadowOpacity")
+        animation.fromValue = 0
+        animation.toValue = 0.8
+        animation.duration = 0.5
+        animation.autoreverses = true
+        animation.isRemovedOnCompletion = true
+        
+        glowLayer.add(animation, forKey: "glow")
+        
+        // Animasyon bittikten sonra layer'ı kaldır
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            glowLayer.removeFromSuperlayer()
+        }
+    }
+    
+    // MARK: - Button Animations
+    
+    @objc private func animateButtonTap(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.1) {
+            sender.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+            sender.alpha = 0.9
+        }
+    }
+    
+    @objc private func animateButtonRelease(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.1) {
+            sender.transform = .identity
+            sender.alpha = 1.0
+        }
+    }
+    
     // MARK: - Actions
     @objc private func openMistralChatbot() {
-        let mistralViewController = MistralChatViewController()
-        navigationController?.pushViewController(mistralViewController, animated: true)
+        // Tıklamada parlama efekti
+        if let chatbotCard = cardComponents.first {
+            UIView.animate(withDuration: 0.15, animations: {
+                chatbotCard.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+                chatbotCard.alpha = 0.8
+            }, completion: { _ in
+                UIView.animate(withDuration: 0.15, animations: {
+                    chatbotCard.transform = .identity
+                    chatbotCard.alpha = 1.0
+                }, completion: { _ in
+                    // Animasyon bittikten sonra ekranı aç
+                    let mistralViewController = MistralChatViewController()
+                    self.navigationController?.pushViewController(mistralViewController, animated: true)
+                })
+            })
+        } else {
+            // Kart bulunamazsa direkt aç
+            let mistralViewController = MistralChatViewController()
+            navigationController?.pushViewController(mistralViewController, animated: true)
+        }
     }
 }
