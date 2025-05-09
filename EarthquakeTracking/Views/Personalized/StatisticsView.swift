@@ -4,6 +4,7 @@ class StatisticsViewController: UIViewController {
     
     // MARK: - Properties
     private var earthquakeViewModel = EarthquakeListViewModel()
+    private var viewComponents: [UIView] = []
     
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -61,6 +62,49 @@ class StatisticsViewController: UIViewController {
         setupUI()
         setupBindings()
         fetchEarthquakeData()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if !activityIndicator.isAnimating {
+            animateViewComponents()
+        } else {
+            
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(animateAfterDataLoaded),
+                name: EarthquakeListViewModel.earthquakesUpdatedNotification,
+                object: nil
+            )
+        }
+    }
+    
+    @objc private func animateAfterDataLoaded() {
+        
+        NotificationCenter.default.removeObserver(
+            self,
+            name: EarthquakeListViewModel.earthquakesUpdatedNotification,
+            object: nil
+        )
+        
+        // Ana thread'de animasyonu başlat
+        DispatchQueue.main.async { [weak self] in
+            self?.animateViewComponents()
+        }
+    }
+    
+    private func animateViewComponents() {
+        
+        for (index, component) in viewComponents.enumerated() {
+            
+            let delay = Double(index) * 0.15
+            
+            UIView.animate(withDuration: 0.6, delay: delay, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                component.alpha = 1.0
+                component.transform = .identity
+            }, completion: nil)
+        }
     }
     
     deinit {
@@ -269,10 +313,25 @@ class StatisticsViewController: UIViewController {
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
+        
+        viewComponents = [
+            headerView,
+            summaryView,
+            regionChartContainerView,
+            magnitudeChartContainerView,
+            depthDistributionChartContainerView,
+            timelineChartContainerView
+        ]
+        
+        for component in viewComponents {
+            component.alpha = 0
+            
+            component.transform = CGAffineTransform(translationX: 0, y: -50)
+        }
     }
     
     private func setupBindings() {
-
+        
         earthquakeViewModel.delegate = self
         
         NotificationCenter.default.addObserver(
@@ -304,6 +363,10 @@ class StatisticsViewController: UIViewController {
             self.createSummaryStats()
             self.createCharts()
             self.activityIndicator.stopAnimating()
+            
+            if self.isViewLoaded && self.view.window != nil {
+                self.animateViewComponents()
+            }
         }
     }
     
