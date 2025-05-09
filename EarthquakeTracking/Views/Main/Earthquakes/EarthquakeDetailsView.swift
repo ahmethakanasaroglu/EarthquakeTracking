@@ -4,11 +4,12 @@ import MapKit
 class EarthquakeDetailsViewController: UIViewController {
     
     private let earthquake: Earthquake
+    private var mapInitialTransform: CGAffineTransform!
     private let mapView = MKMapView()
     private let contentView = UIView()
     private lazy var backgroundGradientLayer: CAGradientLayer = {
         let gradientLayer = CAGradientLayer()
-        // Ana ekrandaki gradient ile aynı renkleri kullanıyoruz
+
         gradientLayer.colors = [
             AppTheme.indigoColor.cgColor,
             AppTheme.indigoLightColor.cgColor
@@ -32,11 +33,21 @@ class EarthquakeDetailsViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupNavigationBarAppearance()
+        mapView.alpha = 0
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         backgroundGradientLayer.frame = view.bounds
+        
+        // Haritanın animasyon için başlangıç transform'unu ayarlıyoruz
+        // viewDidLayoutSubviews içinde yapıyoruz çünkü burada haritanın boyutları belli oluyor
+        if mapInitialTransform == nil {
+            // Haritayı başlangıçta ekranın dışında (solunda) ve küçültülmüş olarak konumlandır
+            mapInitialTransform = CGAffineTransform(translationX: -mapView.bounds.width, y: 0)
+                .scaledBy(x: 0.8, y: 0.8)
+            mapView.transform = mapInitialTransform
+        }
     }
     
     private func setupNavigationBarAppearance() {
@@ -61,9 +72,9 @@ class EarthquakeDetailsViewController: UIViewController {
         mapView.clipsToBounds = true
         view.addSubview(mapView)
         
-        // Content view'ın arka plan rengini ana gradient'in alt rengiyle uyumlu hale getiriyoruz
+        // Content view ayarları (mevcut kodlar)
         contentView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.backgroundColor = AppTheme.indigoLightColor.withAlphaComponent(0.8) // AppTheme'e uygun hale getirdik
+        contentView.backgroundColor = AppTheme.indigoLightColor.withAlphaComponent(0.8)
         contentView.layer.cornerRadius = 24
         contentView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         contentView.layer.shadowColor = UIColor.black.cgColor
@@ -72,33 +83,33 @@ class EarthquakeDetailsViewController: UIViewController {
         contentView.layer.shadowOpacity = 0.2
         view.addSubview(contentView)
         
+        // Mevcut constraint'ler
+        NSLayoutConstraint.activate([
+            mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            mapView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.3),
+            
+            contentView.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: 16),
+            contentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
         setupContentView()
         
+        // Harita üzerinde konum gösterme (mevcut kod)
         if let latitude = Double(earthquake.latitude),
            let longitude = Double(earthquake.longitude) {
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
             let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
-            mapView.setRegion(region, animated: true)
+            mapView.setRegion(region, animated: false) // Başlangıçta animasyonsuz ayarla
             
             let annotation = MKPointAnnotation()
             annotation.coordinate = coordinate
             annotation.title = earthquake.location
             mapView.addAnnotation(annotation)
         }
-        
-        NSLayoutConstraint.activate([
-            mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            // Haritanın yüksekliğini ekranın %40'ından %30'una düşürelim
-            mapView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.3), // 0.4 yerine 0.3
-            
-            // Content view'ı haritaya daha yakın yerleştirerek, daha fazla alan kazandıralım
-            contentView.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: 16), // 20 yerine 16
-            contentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
     }
     
     private func setupContentView() {
@@ -128,46 +139,222 @@ class EarthquakeDetailsViewController: UIViewController {
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
         
-        addSectionToStackView(
-            stackView: stackView,
+        // Kartları oluştur ama stack view'a hemen ekleme
+        let sectionViews = createSectionViews()
+        
+        // viewDidAppear'da çağrılacak animasyon için sectionViews'ı sakla
+        self.sectionViews = sectionViews
+        
+        // Animasyon için sectionViews'ları stack view'a ekliyoruz
+        for view in sectionViews {
+            stackView.addArrangedSubview(view)
+            // Başlangıçta görünmez ve sağdan dışarıda olacak
+            view.alpha = 0
+            view.transform = CGAffineTransform(translationX: view.bounds.width, y: -50)
+        }
+    }
+    
+    private var sectionViews: [UIView] = []
+    
+    private func createSectionViews() -> [UIView] {
+        var views: [UIView] = []
+        
+        let locationView = createSectionView(
             sectionTitle: "Konum",
             content: earthquake.location,
             imageName: "mappin.and.ellipse"
         )
+        views.append(locationView)
         
-        addSectionToStackView(
-            stackView: stackView,
+        let dateTimeView = createSectionView(
             sectionTitle: "Tarih ve Saat",
             content: "\(earthquake.date) \(earthquake.time)",
             imageName: "calendar"
         )
+        views.append(dateTimeView)
         
-        addSectionToStackView(
-            stackView: stackView,
+        let coordinatesView = createSectionView(
             sectionTitle: "Koordinatlar",
             content: "Enlem: \(earthquake.latitude)\nBoylam: \(earthquake.longitude)",
             imageName: "location.circle"
         )
+        views.append(coordinatesView)
         
         let magnitudeValue = getMagnitudeValue()
         let magnitudeString = String(format: "ML: %.1f", magnitudeValue)
         
-        addSectionToStackView(
-            stackView: stackView,
+        let magnitudeView = createSectionView(
             sectionTitle: "Büyüklük",
             content: magnitudeString,
             imageName: "waveform.path.ecg",
             detailsColor: getMagnitudeColor(for: magnitudeValue)
         )
+        views.append(magnitudeView)
         
-        addSectionToStackView(
-            stackView: stackView,
+        let depthView = createSectionView(
             sectionTitle: "Derinlik",
             content: "\(earthquake.depth_km) km",
             imageName: "arrow.down.circle"
         )
+        views.append(depthView)
         
-        addInformationSection(stackView: stackView)
+        let infoView = createInformationView()
+        views.append(infoView)
+        
+        return views
+    }
+    
+    private func createSectionView(sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) -> UIView {
+        
+        let sectionView = UIView()
+        sectionView.translatesAutoresizingMaskIntoConstraints = false
+        sectionView.backgroundColor = UIColor.white
+        sectionView.layer.cornerRadius = 16
+        
+        let iconView = UIImageView(image: UIImage(systemName: imageName))
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.contentMode = .scaleAspectFit
+        iconView.tintColor = .darkGray
+        
+        let titleLabel = UILabel()
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = sectionTitle
+        titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        titleLabel.textColor = UIColor.darkGray
+        
+        let contentLabel = UILabel()
+        contentLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentLabel.text = content
+        contentLabel.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        contentLabel.textColor = detailsColor ?? UIColor.darkText
+        contentLabel.numberOfLines = 0
+        
+        sectionView.addSubview(iconView)
+        sectionView.addSubview(titleLabel)
+        sectionView.addSubview(contentLabel)
+        
+        NSLayoutConstraint.activate([
+            iconView.topAnchor.constraint(equalTo: sectionView.topAnchor, constant: 16),
+            iconView.leadingAnchor.constraint(equalTo: sectionView.leadingAnchor, constant: 16),
+            iconView.widthAnchor.constraint(equalToConstant: 26),
+            iconView.heightAnchor.constraint(equalToConstant: 26),
+            
+            titleLabel.centerYAnchor.constraint(equalTo: iconView.centerYAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
+            titleLabel.trailingAnchor.constraint(equalTo: sectionView.trailingAnchor, constant: -16),
+            
+            contentLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 12),
+            contentLabel.leadingAnchor.constraint(equalTo: sectionView.leadingAnchor, constant: 16),
+            contentLabel.trailingAnchor.constraint(equalTo: sectionView.trailingAnchor, constant: -16),
+            contentLabel.bottomAnchor.constraint(equalTo: sectionView.bottomAnchor, constant: -16)
+        ])
+        
+        return sectionView
+    }
+    
+    private func createInformationView() -> UIView {
+        let infoView = UIView()
+        infoView.translatesAutoresizingMaskIntoConstraints = false
+        infoView.backgroundColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 0.3) // Turuncu bilgi kartı
+        infoView.layer.cornerRadius = 16
+        
+        let infoIcon = UIImageView(image: UIImage(systemName: "info.circle.fill"))
+        infoIcon.translatesAutoresizingMaskIntoConstraints = false
+        infoIcon.contentMode = .scaleAspectFit
+        infoIcon.tintColor = .white
+        
+        let infoTitle = UILabel()
+        infoTitle.translatesAutoresizingMaskIntoConstraints = false
+        infoTitle.text = "Büyüklük Ölçeği Hakkında"
+        infoTitle.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        infoTitle.textColor = .white
+        
+        let infoContent = UILabel()
+        infoContent.translatesAutoresizingMaskIntoConstraints = false
+        infoContent.text = "Richter ölçeği (ML): Deprem büyüklüğünün logaritmik ölçeğidir. Her 1.0 değerindeki artış, yaklaşık 10 kat daha fazla sarsıntı genliği ve 32 kat daha fazla enerji anlamına gelir.\n\n3.0 altı: Genellikle hissedilmez\n3.0-3.9: Hafif hissedilir\n4.0-4.9: Orta şiddette, eşyalar sallanabilir\n5.0-5.9: Hasar verebilir\n6.0+: Önemli hasar potansiyeli"
+        infoContent.font = UIFont.systemFont(ofSize: 14)
+        infoContent.textColor = .white.withAlphaComponent(0.9)
+        infoContent.numberOfLines = 0
+        
+        infoView.addSubview(infoIcon)
+        infoView.addSubview(infoTitle)
+        infoView.addSubview(infoContent)
+        
+        NSLayoutConstraint.activate([
+            infoIcon.topAnchor.constraint(equalTo: infoView.topAnchor, constant: 16),
+            infoIcon.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
+            infoIcon.widthAnchor.constraint(equalToConstant: 24),
+            infoIcon.heightAnchor.constraint(equalToConstant: 24),
+            
+            infoTitle.centerYAnchor.constraint(equalTo: infoIcon.centerYAnchor),
+            infoTitle.leadingAnchor.constraint(equalTo: infoIcon.trailingAnchor, constant: 12),
+            infoTitle.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
+            
+            infoContent.topAnchor.constraint(equalTo: infoIcon.bottomAnchor, constant: 12),
+            infoContent.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
+            infoContent.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
+            infoContent.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -16)
+        ])
+        
+        return infoView
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // Önce harita animasyonunu başlat, sonra diğer kartları göster
+        animateMapView {
+            // Harita animasyonu tamamlandıktan sonra diğer kartları göster
+            self.animateSectionViews()
+        }
+    }
+    
+    private func animateMapView(completion: @escaping () -> Void) {
+        // Haritanın bölgesini animasyonlu gösterme
+        if let latitude = Double(earthquake.latitude),
+           let longitude = Double(earthquake.longitude) {
+            let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
+            
+            // Önce haritayı görünür yap (ama hala transform uygulanmış durumda)
+            UIView.animate(withDuration: 0.3, animations: {
+                self.mapView.alpha = 1.0
+            }, completion: { _ in
+                // Sonra haritayı normal konumuna getir
+                UIView.animate(withDuration: 0.7, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                    self.mapView.transform = .identity
+                }, completion: { _ in
+                    // Harita normal konumuna geldikten sonra bölgeyi animasyonlu göster
+                    self.mapView.setRegion(region, animated: true)
+                    
+                    // Bölge animasyonu için biraz zaman ver ve sonra completion'ı çağır
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        completion()
+                    }
+                })
+            })
+        } else {
+            // Eğer koordinat yoksa direkt haritayı göster ve completion'ı çağır
+            UIView.animate(withDuration: 0.7, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
+                self.mapView.alpha = 1.0
+                self.mapView.transform = .identity
+            }, completion: { _ in
+                completion()
+            })
+        }
+    }
+    
+    private func animateSectionViews() {
+        // Her bir görünümü sırayla anime et
+        for (index, view) in sectionViews.enumerated() {
+            // Animasyon gecikmesini hesapla (her kart için biraz daha uzun)
+            let delay = Double(index) * 0.15
+            
+            UIView.animate(withDuration: 0.5, delay: delay, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.7, options: [], animations: {
+                view.alpha = 1.0
+                view.transform = .identity
+            }, completion: nil)
+        }
     }
     
     private func getMagnitudeColor(for magnitude: Double) -> UIColor {
@@ -183,9 +370,9 @@ class EarthquakeDetailsViewController: UIViewController {
     private func addSectionToStackView(stackView: UIStackView, sectionTitle: String, content: String, imageName: String, detailsColor: UIColor? = nil) {
         
         let sectionView = UIView()
-            sectionView.translatesAutoresizingMaskIntoConstraints = false
-            sectionView.backgroundColor = UIColor.white
-            sectionView.layer.cornerRadius = 16
+        sectionView.translatesAutoresizingMaskIntoConstraints = false
+        sectionView.backgroundColor = UIColor.white
+        sectionView.layer.cornerRadius = 16
         
         let iconView = UIImageView(image: UIImage(systemName: imageName))
         iconView.translatesAutoresizingMaskIntoConstraints = false
@@ -197,7 +384,7 @@ class EarthquakeDetailsViewController: UIViewController {
         titleLabel.text = sectionTitle
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .medium)
         titleLabel.textColor = UIColor.darkGray
-
+        
         let contentLabel = UILabel()
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
         contentLabel.text = content
