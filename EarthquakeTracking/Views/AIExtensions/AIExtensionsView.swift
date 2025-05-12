@@ -268,7 +268,7 @@ class AIExtensionsViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
         titleLabel.font = UIFont.systemFont(ofSize: 22, weight: .bold)
-        titleLabel.textColor = AppTheme.titleTextColor
+        titleLabel.textColor = .white
         
         let lineView = UIView()
         lineView.translatesAutoresizingMaskIntoConstraints = false
