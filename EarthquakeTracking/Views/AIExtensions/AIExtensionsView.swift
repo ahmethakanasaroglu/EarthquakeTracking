@@ -208,7 +208,7 @@ class AIExtensionsViewController: UIViewController {
             titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 30),
             titleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -30),
             
-            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
             subtitleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 30),
             subtitleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -30)
         ])
