@@ -45,7 +45,7 @@ class MistralManager {
         NotificationCenter.default.post(name: MistralManager.typingStatusDidChangeNotification, object: self)
     }
     
-    private func notifyErrorDidChange() {
+    func notifyErrorDidChange() {
         NotificationCenter.default.post(name: MistralManager.errorDidChangeNotification, object: self, userInfo: ["error": error as Any])
     }
     
@@ -156,7 +156,7 @@ class MistralManager {
         task.resume()
     }
     
-    private func processTurkishResponse(_ content: String) -> String {
+    func processTurkishResponse(_ content: String) -> String {
         var result = content.trimmingCharacters(in: .whitespacesAndNewlines)
         
         if result.lowercased().hasPrefix("türkçe:") {
@@ -208,7 +208,7 @@ class MistralManager {
         return result
     }
     
-    private func handleError(_ message: String) {
+    func handleError(_ message: String) {
         error = message
         notifyErrorDidChange()
         
