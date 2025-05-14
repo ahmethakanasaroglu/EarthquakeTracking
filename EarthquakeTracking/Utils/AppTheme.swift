@@ -7,7 +7,7 @@ struct AppTheme {
     
     // AppTheme'e eklemek için indigo renk kodları
     static let indigoColor = UIColor(red: 75/255, green: 0/255, blue: 130/255, alpha: 1) // Deep Indigo
-    static let indigoLightColor = UIColor(red: 93/255, green: 107/255, blue: 230/255, alpha: 1) // Light Indigo
+    static let indigoLightColor = UIColor(red: 138/255, green: 43/255, blue: 226/255, alpha: 1.0) // Light Indigo
     
     static let orangeColor = UIColor(red: 230/255, green: 126/255, blue: 34/255, alpha: 1) // Deep Soft Orange
     static let orangeLightColor = UIColor(red: 246/255, green: 185/255, blue: 59/255, alpha: 1) // Light Soft Orange
@@ -164,20 +164,23 @@ struct AppTheme {
         appearance.shadowColor = UIColor.black.withAlphaComponent(0.03)
         appearance.shadowImage = createShadowImage()
         
-        let selected = UITabBarItemAppearance()
-        selected.normal.iconColor = primaryColor
-        selected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: primaryColor]
+        let itemAppearance = UITabBarItemAppearance()
         
-        let unselected = UITabBarItemAppearance()
-        unselected.normal.iconColor = lightTextColor
-        unselected.normal.titleTextAttributes = [NSAttributedString.Key.foregroundColor: lightTextColor]
+        // Unselected (normal)
+        itemAppearance.normal.iconColor = indigoLightColor
+        itemAppearance.normal.titleTextAttributes = [.foregroundColor: indigoLightColor]
         
-        appearance.stackedLayoutAppearance = selected
-        appearance.inlineLayoutAppearance = selected
-        appearance.compactInlineLayoutAppearance = selected
+        // Selected
+        itemAppearance.selected.iconColor = indigoColor
+        itemAppearance.selected.titleTextAttributes = [.foregroundColor: indigoColor]
         
+        appearance.stackedLayoutAppearance = itemAppearance
+        appearance.inlineLayoutAppearance = itemAppearance
+        appearance.compactInlineLayoutAppearance = itemAppearance
+
         return appearance
     }
+
     
     private static func createShadowImage() -> UIImage {
         let rect = CGRect(x: 0, y: 0, width: 1, height: 1)
