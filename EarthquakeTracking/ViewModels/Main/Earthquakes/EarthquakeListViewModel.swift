@@ -37,7 +37,7 @@ class EarthquakeListViewModel {
     weak var delegate: EarthquakeListViewModelDelegate?
     
     private let networkManager = NetworkManager()
-    private var allEarthquakes: [Earthquake] = []
+    var allEarthquakes: [Earthquake] = []
     private var currentMinMagnitude: Double = 0.0
     private var currentSortOrder: SortOrder = .date
     
@@ -128,7 +128,7 @@ class EarthquakeListViewModel {
         )
     }
     
-    private func getMagnitudeValue(for earthquake: Earthquake) -> Double {
+    func getMagnitudeValue(for earthquake: Earthquake) -> Double {
         if let ml = Double(earthquake.ml), ml > 0 {
             return ml
         } else if let mw = Double(earthquake.mw), mw > 0 {
@@ -139,7 +139,7 @@ class EarthquakeListViewModel {
         return 0.0
     }
     
-    private func createDateFromStrings(date: String, time: String) -> Date {
+    func createDateFromStrings(date: String, time: String) -> Date {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy.MM.dd HH:mm:ss"
         
