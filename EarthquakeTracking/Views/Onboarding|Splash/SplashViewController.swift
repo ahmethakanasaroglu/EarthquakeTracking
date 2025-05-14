@@ -163,8 +163,8 @@ class SplashViewController: UIViewController {
 
 // MARK: - Wave Animation View
 class WaveAnimationView: UIView {
-    var waveColor = UIColor.blue.withAlphaComponent(0.4)
-    var secondaryWaveColor = UIColor.blue.withAlphaComponent(0.4)
+    var waveColor = UIColor.purple.withAlphaComponent(0.4)
+    var secondaryWaveColor = UIColor.purple.withAlphaComponent(0.4)
     
     private var displayLink: CADisplayLink?
     private var startTime: CFTimeInterval = 0
