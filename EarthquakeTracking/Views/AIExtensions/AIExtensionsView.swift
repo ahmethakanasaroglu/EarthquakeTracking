@@ -717,13 +717,13 @@ class AIExtensionsViewController: UIViewController {
                     chatbotCard.alpha = 1.0
                 }, completion: { _ in
                     // Animasyon bittikten sonra ekranı aç
-                    let mistralViewController = MistralChatViewController()
+                    let mistralViewController = LlamaChatViewController()
                     self.navigationController?.pushViewController(mistralViewController, animated: true)
                 })
             })
         } else {
             // Kart bulunamazsa direkt aç
-            let mistralViewController = MistralChatViewController()
+            let mistralViewController = LlamaChatViewController()
             navigationController?.pushViewController(mistralViewController, animated: true)
         }
     }
