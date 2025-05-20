@@ -1,9 +1,9 @@
 import UIKit
 
-class MistralChatViewController: UIViewController {
+class LlamaChatViewController: UIViewController {
     
     // MARK: - Properties
-    private let mistralManager = MistralManager()
+    private let llamaManager = LlamaManager()
     
     private let tableView = UITableView()
     private let messageInputBar = UIView()
@@ -14,10 +14,8 @@ class MistralChatViewController: UIViewController {
     private var keyboardHeight: CGFloat = 0
     private var bottomConstraint: NSLayoutConstraint!
     
-    // Arka plan için gradient layer
     private let gradientLayer = CAGradientLayer()
     
-    // İlk mesaj oluşturuldu mu
     private var welcomeMessageSent = false
     
     // MARK: - Lifecycle
@@ -38,17 +36,15 @@ class MistralChatViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationController?.setNavigationBarHidden(true, animated: true)
         
-        // Tab bar rengini koyu mavi yap
         setupTabBarAppearance()
         
-        // Hoş geldiniz mesajını göster
         if !welcomeMessageSent {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                let welcomeMessage = MistralMessage(
+                let welcomeMessage = ChatMessage(
                     role: .assistant,
                     content: "Merhaba! Ben Deprem Asistanınızım. Depremler, deprem güvenliği ve hazırlıkları hakkında sorularınızı yanıtlayabilirim. Size nasıl yardımcı olabilirim?"
                 )
-                self.mistralManager.messages.append(welcomeMessage)
+                self.llamaManager.messages.append(welcomeMessage)
                 self.tableView.reloadData()
                 self.scrollToBottom()
                 self.welcomeMessageSent = true
@@ -61,7 +57,6 @@ class MistralChatViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: true)
         navigationController?.navigationBar.prefersLargeTitles = true
         
-        // Tab bar'ı varsayılan rengine geri çevir
     }
     
     deinit {
@@ -70,7 +65,7 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - UI Setup
     private func setupUI() {
-        // Arka plan rengi ve gradient
+
         setupGradientBackground()
         
         setupTableView()
@@ -87,23 +82,19 @@ class MistralChatViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Tab bar'ı koyu mavi yap
+
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             
-            // Görseldeki koyu mavi renk
             appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
             
-            // Tab bar öğeleri
             let itemAppearance = UITabBarItemAppearance()
             
-            // Normal durum renkleri
             itemAppearance.normal.iconColor = .white.withAlphaComponent(0.6)
             itemAppearance.normal.titleTextAttributes = [
                 NSAttributedString.Key.foregroundColor: UIColor.white.withAlphaComponent(0.6)
             ]
             
-            // Seçili durum renkleri
             itemAppearance.selected.iconColor = .white
             itemAppearance.selected.titleTextAttributes = [
                 NSAttributedString.Key.foregroundColor: UIColor.white
@@ -123,7 +114,7 @@ class MistralChatViewController: UIViewController {
     
     private func resetTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Varsayılan tab bar görünümünü geri yükle
+
             tabBar.standardAppearance = UITabBarAppearance()
             
             if #available(iOS 15.0, *) {
@@ -146,7 +137,7 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupNavigationBar() {
-        // Özel bir navigation bar görünümü
+
         let navBar = UIView()
         navBar.translatesAutoresizingMaskIntoConstraints = false
         navBar.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
@@ -207,7 +198,6 @@ class MistralChatViewController: UIViewController {
         tableView.keyboardDismissMode = .interactive
         tableView.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
         
-        // Dokunarak klavyeyi kapatma
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false
         tableView.addGestureRecognizer(tapGesture)
@@ -309,9 +299,8 @@ class MistralChatViewController: UIViewController {
     }
     
     private func setupConstraints() {
-        let navBarHeight: CGFloat = 70 // Navigation bar ve padding için alan
+        let navBarHeight: CGFloat = 70
         
-        // Sadece custom navigation bar'ı kullanacağımız için, original constraints yerine yenilerini ekliyoruz
         let infoViewConstraints: [NSLayoutConstraint] = [
             infoView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: navBarHeight),
             infoView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -366,21 +355,21 @@ class MistralChatViewController: UIViewController {
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(messagesDidChange),
-            name: MistralManager.messagesDidChangeNotification,
+            name: LlamaManager.messagesDidChangeNotification,
             object: nil
         )
         
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(typingStatusDidChange),
-            name: MistralManager.typingStatusDidChangeNotification,
+            name: LlamaManager.typingStatusDidChangeNotification,
             object: nil
         )
         
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(errorDidChange),
-            name: MistralManager.errorDidChangeNotification,
+            name: LlamaManager.errorDidChangeNotification,
             object: nil
         )
     }
@@ -391,7 +380,7 @@ class MistralChatViewController: UIViewController {
     }
     
     @objc private func typingStatusDidChange() {
-        if mistralManager.isTyping {
+        if llamaManager.isTyping {
             showTypingIndicator()
         } else {
             hideTypingIndicator()
@@ -399,7 +388,7 @@ class MistralChatViewController: UIViewController {
     }
     
     @objc private func errorDidChange() {
-        if let error = mistralManager.error {
+        if let error = llamaManager.error {
             showErrorAlert(message: error)
         }
     }
@@ -426,7 +415,7 @@ class MistralChatViewController: UIViewController {
             return
         }
         
-        mistralManager.sendMessage(text)
+        llamaManager.sendMessage(text)
         messageTextField.text = ""
     }
     
@@ -439,16 +428,15 @@ class MistralChatViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "İptal", style: .cancel))
         alert.addAction(UIAlertAction(title: "Temizle", style: .destructive) { [weak self] _ in
-            self?.mistralManager.clearConversation()
+            self?.llamaManager.clearConversation()
             self?.welcomeMessageSent = false
             
-            // Hoş geldiniz mesajını tekrar göster
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                let welcomeMessage = MistralMessage(
+                let welcomeMessage = ChatMessage(
                     role: .assistant,
                     content: "Merhaba! Ben Deprem Asistanınızım. Depremler, deprem güvenliği ve hazırlıkları hakkında sorularınızı yanıtlayabilirim. Size nasıl yardımcı olabilirim?"
                 )
-                self?.mistralManager.messages.append(welcomeMessage)
+                self?.llamaManager.messages.append(welcomeMessage)
                 self?.tableView.reloadData()
                 self?.scrollToBottom()
                 self?.welcomeMessageSent = true
@@ -497,7 +485,7 @@ class MistralChatViewController: UIViewController {
     
     // MARK: - Helper Methods
     private func scrollToBottom() {
-        let visibleMessages = mistralManager.messages.filter { $0.role != .system }
+        let visibleMessages = llamaManager.messages.filter { $0.role != .system }
         
         if visibleMessages.count > 0 {
             let indexPath = IndexPath(row: visibleMessages.count - 1, section: 0)
@@ -541,9 +529,9 @@ class MistralChatViewController: UIViewController {
 }
 
 // MARK: - UITableViewDelegate, UITableViewDataSource
-extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource {
+extension LlamaChatViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return mistralManager.messages.filter { $0.role != .system }.count
+        return llamaManager.messages.filter { $0.role != .system }.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -551,7 +539,7 @@ extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource 
             return UITableViewCell()
         }
         
-        let visibleMessages = mistralManager.messages.filter { $0.role != .system }
+        let visibleMessages = llamaManager.messages.filter { $0.role != .system }
         
         if indexPath.row < visibleMessages.count {
             let message = visibleMessages[indexPath.row]
@@ -571,7 +559,7 @@ extension MistralChatViewController: UITableViewDelegate, UITableViewDataSource 
 }
 
 // MARK: - UITextFieldDelegate
-extension MistralChatViewController: UITextFieldDelegate {
+extension LlamaChatViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         sendMessage()
         return true
@@ -585,7 +573,6 @@ class MessageCell: UITableViewCell {
     private let bubbleView = UIView()
     private let timeLabel = UILabel()
     
-    // Asistan mesajları için enerji halkası efekti
     private let energyRingView = UIImageView()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -632,7 +619,7 @@ class MessageCell: UITableViewCell {
         setupUI()
     }
     
-    func configure(with message: MistralMessage) {
+    func configure(with message: ChatMessage) {
         let isUser = message.role == .user
         
         if isUser {
@@ -697,14 +684,12 @@ class MessageCell: UITableViewCell {
         }
     }
     
-    // Asistan mesajları için yeşil enerji halkası efekti oluştur
     private func createEnergyRingImage() -> UIImage? {
         let size = CGSize(width: 40, height: 40)
         UIGraphicsBeginImageContextWithOptions(size, false, 0)
         
         guard let context = UIGraphicsGetCurrentContext() else { return nil }
         
-        // Dıştan içe doğru yeşil renk gradyanı oluştur
         let colors = [
             UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.1).cgColor,
             UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.5).cgColor,
@@ -719,7 +704,6 @@ class MessageCell: UITableViewCell {
         let center = CGPoint(x: size.width/2, y: size.height/2)
         context.drawRadialGradient(gradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: size.width/2, options: [])
         
-        // Halkayı çiz
         context.setStrokeColor(UIColor(red: 0.0/255.0, green: 240.0/255.0, blue: 160.0/255.0, alpha: 0.8).cgColor)
         context.setLineWidth(1.5)
         context.addEllipse(in: CGRect(x: 5, y: 5, width: size.width-10, height: size.height-10))
