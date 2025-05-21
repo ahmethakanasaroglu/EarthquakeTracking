@@ -181,13 +181,13 @@ class EarthquakeMapViewModel {
     
     func getInitialSpan() -> MKCoordinateSpan {
         if earthquakes.count <= 1 {
-            return MKCoordinateSpan(latitudeDelta: 10, longitudeDelta: 10)
+            return MKCoordinateSpan(latitudeDelta: 10, longitudeDelta: 10) // 1000 km
         }
         
-        var minLat = 90.0
-        var maxLat = -90.0
-        var minLong = 180.0
-        var maxLong = -180.0
+        var minLat = 90.0 // Kuzey kutbu
+        var maxLat = -90.0 // Güney kutbu
+        var minLong = 180.0 // Uluslararası Tarih Değiştirme Çizgisi'nin doğusu
+        var maxLong = -180.0 // Uluslararası Tarih Değiştirme Çizgisi'nin batısı
         
         for earthquake in earthquakes {
             if let latitude = Double(earthquake.latitude),
@@ -199,10 +199,10 @@ class EarthquakeMapViewModel {
             }
         }
         
-        let latDelta = (maxLat - minLat) * 1.5
-        let longDelta = (maxLong - minLong) * 1.5
+        let latDelta = (maxLat - minLat) * 1.5 // enlem farkını genişletme
+        let longDelta = (maxLong - minLong) * 1.5 // boylam farkını genişletme
         
-        return MKCoordinateSpan(latitudeDelta: max(5, latDelta), longitudeDelta: max(5, longDelta))
+        return MKCoordinateSpan(latitudeDelta: max(5, latDelta), longitudeDelta: max(5, longDelta)) // spani döndürüyor, min. 5 derecelik görüş açısı sağlıyor
     }
     
     func filterByMagnitude(minMagnitude: Double) {
@@ -277,8 +277,8 @@ class EarthquakeAnnotation: NSObject, MKAnnotation {
            let lat2 = Double(earthquake.latitude),
            let lon2 = Double(earthquake.longitude) {
             
-            let latMatches = abs(lat1 - lat2) < 0.0001
-            let lonMatches = abs(lon1 - lon2) < 0.0001
+            let latMatches = abs(lat1 - lat2) < 0.0001 // 10 metre
+            let lonMatches = abs(lon1 - lon2) < 0.0001 // 10 metre
             
             return latMatches && lonMatches
         }
