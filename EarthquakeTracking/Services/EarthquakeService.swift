@@ -3,6 +3,8 @@ import Foundation
 class EarthquakeService {
     static let shared = EarthquakeService()
     
+    private init () {}
+    
     private let urlString = "http://localhost:5001/earthquakes"
 
     func fetchEarthquakes(completion: @escaping ([Earthquake]?) -> Void) {
