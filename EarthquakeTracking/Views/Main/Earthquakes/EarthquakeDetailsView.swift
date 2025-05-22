@@ -40,10 +40,8 @@ class EarthquakeDetailsViewController: UIViewController {
         super.viewDidLayoutSubviews()
         backgroundGradientLayer.frame = view.bounds
         
-        // Haritanın animasyon için başlangıç transform'unu ayarlıyoruz
-        // viewDidLayoutSubviews içinde yapıyoruz çünkü burada haritanın boyutları belli oluyor
         if mapInitialTransform == nil {
-            // Haritayı başlangıçta ekranın dışında (solunda) ve küçültülmüş olarak konumlandır
+
             mapInitialTransform = CGAffineTransform(translationX: -mapView.bounds.width, y: 0)
                 .scaledBy(x: 0.8, y: 0.8)
             mapView.transform = mapInitialTransform
@@ -52,7 +50,7 @@ class EarthquakeDetailsViewController: UIViewController {
     
     private func setupNavigationBarAppearance() {
         if let navigationBar = self.navigationController?.navigationBar {
-            // AppTheme'den navigation bar görünümünü al
+
             let appearance = AppTheme.configureNavigationBarAppearance()
             navigationBar.standardAppearance = appearance
             navigationBar.scrollEdgeAppearance = appearance
@@ -72,7 +70,6 @@ class EarthquakeDetailsViewController: UIViewController {
         mapView.clipsToBounds = true
         view.addSubview(mapView)
         
-        // Content view ayarları (mevcut kodlar)
         contentView.translatesAutoresizingMaskIntoConstraints = false
         contentView.backgroundColor = AppTheme.indigoLightColor.withAlphaComponent(0.8)
         contentView.layer.cornerRadius = 24
@@ -83,7 +80,6 @@ class EarthquakeDetailsViewController: UIViewController {
         contentView.layer.shadowOpacity = 0.2
         view.addSubview(contentView)
         
-        // Mevcut constraint'ler
         NSLayoutConstraint.activate([
             mapView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
@@ -98,7 +94,6 @@ class EarthquakeDetailsViewController: UIViewController {
         
         setupContentView()
         
-        // Harita üzerinde konum gösterme (mevcut kod)
         if let latitude = Double(earthquake.latitude),
            let longitude = Double(earthquake.longitude) {
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -139,16 +134,13 @@ class EarthquakeDetailsViewController: UIViewController {
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
         
-        // Kartları oluştur ama stack view'a hemen ekleme
         let sectionViews = createSectionViews()
         
-        // viewDidAppear'da çağrılacak animasyon için sectionViews'ı sakla
         self.sectionViews = sectionViews
         
-        // Animasyon için sectionViews'ları stack view'a ekliyoruz
         for view in sectionViews {
             stackView.addArrangedSubview(view)
-            // Başlangıçta görünmez ve sağdan dışarıda olacak
+
             view.alpha = 0
             view.transform = CGAffineTransform(translationX: view.bounds.width, y: -50)
         }
@@ -302,39 +294,36 @@ class EarthquakeDetailsViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        // Önce harita animasyonunu başlat, sonra diğer kartları göster
         animateMapView {
-            // Harita animasyonu tamamlandıktan sonra diğer kartları göster
+
             self.animateSectionViews()
         }
     }
     
     private func animateMapView(completion: @escaping () -> Void) {
-        // Haritanın bölgesini animasyonlu gösterme
+
         if let latitude = Double(earthquake.latitude),
            let longitude = Double(earthquake.longitude) {
             let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
             let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5))
             
-            // Önce haritayı görünür yap (ama hala transform uygulanmış durumda)
             UIView.animate(withDuration: 0.3, animations: {
                 self.mapView.alpha = 1.0
             }, completion: { _ in
-                // Sonra haritayı normal konumuna getir
+
                 UIView.animate(withDuration: 0.7, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
                     self.mapView.transform = .identity
                 }, completion: { _ in
-                    // Harita normal konumuna geldikten sonra bölgeyi animasyonlu göster
+
                     self.mapView.setRegion(region, animated: true)
                     
-                    // Bölge animasyonu için biraz zaman ver ve sonra completion'ı çağır
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         completion()
                     }
                 })
             })
         } else {
-            // Eğer koordinat yoksa direkt haritayı göster ve completion'ı çağır
+
             UIView.animate(withDuration: 0.7, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
                 self.mapView.alpha = 1.0
                 self.mapView.transform = .identity
@@ -345,9 +334,9 @@ class EarthquakeDetailsViewController: UIViewController {
     }
     
     private func animateSectionViews() {
-        // Her bir görünümü sırayla anime et
+
         for (index, view) in sectionViews.enumerated() {
-            // Animasyon gecikmesini hesapla (her kart için biraz daha uzun)
+
             let delay = Double(index) * 0.15
             
             UIView.animate(withDuration: 0.5, delay: delay, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.7, options: [], animations: {

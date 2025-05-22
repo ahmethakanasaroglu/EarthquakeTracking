@@ -8,7 +8,6 @@ class PersonalizedViewController: UIViewController {
     private let viewModel = PersonalizedViewModel()
     private let locationManager = CLLocationManager()
     
-    // Kart geçişleri için özellikler
     private var currentCardIndex = 0
     private var cards: [UIView] = []
     
@@ -130,14 +129,12 @@ class PersonalizedViewController: UIViewController {
         super.viewDidLayoutSubviews()
         backgroundGradientLayer.frame = view.bounds
         
-        // cardScrollView içeriğini ayarla
         let featuresCount = 4
         cardScrollView.contentSize = CGSize(
             width: cardScrollView.frame.width * CGFloat(featuresCount),
             height: cardScrollView.frame.height
         )
         
-        // Kartları yerleştir
         positionCards()
     }
     
@@ -149,19 +146,16 @@ class PersonalizedViewController: UIViewController {
         super.viewWillAppear(animated)
         viewModel.loadRiskDataForCurrentLocation()
         
-        // TabBar'ı indigo renge ayarla
         setupTabBarAppearance()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        
-        // TabBar'ı eski haline döndür
-    }
+            }
     
     // MARK: - Setup
     private func setupBackground() {
-        // Eski gradyan kodu yerine AppTheme kullan
+
         backgroundGradientLayer.colors = [
             AppTheme.indigoColor.cgColor,
             AppTheme.indigoLightColor.cgColor
@@ -171,7 +165,7 @@ class PersonalizedViewController: UIViewController {
     
     private func setupNavigationBarAppearance() {
         if let navigationBar = self.navigationController?.navigationBar {
-            // AppTheme'den navigation bar görünümünü al
+
             let appearance = AppTheme.configureNavigationBarAppearance()
             navigationBar.standardAppearance = appearance
             navigationBar.scrollEdgeAppearance = appearance
@@ -246,7 +240,7 @@ class PersonalizedViewController: UIViewController {
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // AppTheme'den tab bar görünümünü al
+
             tabBar.standardAppearance = AppTheme.configureTabBarAppearance()
             
             if #available(iOS 15.0, *) {
@@ -257,7 +251,7 @@ class PersonalizedViewController: UIViewController {
     
     private func resetTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Varsayılan tab bar görünümünü geri yükle
+
             tabBar.standardAppearance = UITabBarAppearance()
             
             if #available(iOS 15.0, *) {
@@ -267,7 +261,7 @@ class PersonalizedViewController: UIViewController {
     }
     
     private func setupCards() {
-        // Kart özellikleri
+
         let features = [
             (title: "Kişiselleştirilmiş Uyarı Sistemi", description: "Önem verdiğiniz bölgeler için deprem uyarılarını özelleştirin.", icon: "bell.fill", color: "#3498db", action: #selector(openNotificationSettings)),
             (title: "Deprem Simülasyonu", description: "Farklı büyüklüklerdeki depremlerin etkilerini deneyimleyin.", icon: "waveform.path.ecg", color: "#9b59b6", action: #selector(openSimulation)),
@@ -275,7 +269,6 @@ class PersonalizedViewController: UIViewController {
             (title: "Deprem Riski Tahmin Modeli", description: "Yapay zeka ile bölgenizdeki deprem riskini görüntüleyin.", icon: "map.fill", color: "#2ecc71", action: #selector(openRiskModel))
         ]
         
-        // Kartları oluştur
         cards = []
         
         for (index, feature) in features.enumerated() {
@@ -294,10 +287,10 @@ class PersonalizedViewController: UIViewController {
     
     private func positionCards() {
         let pageWidth = cardScrollView.frame.width
-        let cardWidth = pageWidth - 60 // Her iki taraftan 30px boşluk
+        let cardWidth = pageWidth - 60
         
         for (index, card) in cards.enumerated() {
-            // Kart boyutu ve pozisyonu
+
             let xPosition = (pageWidth * CGFloat(index)) + ((pageWidth - cardWidth) / 2)
             
             card.frame = CGRect(
@@ -307,7 +300,6 @@ class PersonalizedViewController: UIViewController {
                 height: cardScrollView.frame.height - 20
             )
             
-            // Köşe yuvarlama ve gölge ekle
             card.layer.cornerRadius = 20
             card.layer.shadowColor = UIColor.black.cgColor
             card.layer.shadowOpacity = 0.2
@@ -320,31 +312,26 @@ class PersonalizedViewController: UIViewController {
         let cardView = UIView()
         cardView.backgroundColor = .white
         
-        // Dokunma algılayıcısı ekle
         let tapGesture = UITapGestureRecognizer(target: self, action: action)
         cardView.addGestureRecognizer(tapGesture)
         cardView.isUserInteractionEnabled = true
         
-        // Renk çubuğu
         let colorView = UIView()
         colorView.translatesAutoresizingMaskIntoConstraints = false
         colorView.backgroundColor = hexToUIColor(hex: color)
         colorView.layer.cornerRadius = 20
         colorView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         
-        // İkon arka planı
         let iconContainer = UIView()
         iconContainer.translatesAutoresizingMaskIntoConstraints = false
         iconContainer.backgroundColor = hexToUIColor(hex: color)
         iconContainer.layer.cornerRadius = 30
         
-        // İkon
         let iconImageView = UIImageView(image: UIImage(systemName: iconName))
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
         iconImageView.tintColor = .white
         
-        // Başlık
         let titleLabel = UILabel()
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = title
@@ -352,7 +339,6 @@ class PersonalizedViewController: UIViewController {
         titleLabel.textColor = UIColor.darkGray
         titleLabel.numberOfLines = 2
         
-        // Açıklama
         let descriptionLabel = UILabel()
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         descriptionLabel.text = description
@@ -360,13 +346,11 @@ class PersonalizedViewController: UIViewController {
         descriptionLabel.textColor = UIColor.gray
         descriptionLabel.numberOfLines = 0
         
-        // İleri oku
         let arrowImageView = UIImageView(image: UIImage(systemName: "arrow.right.circle.fill"))
         arrowImageView.translatesAutoresizingMaskIntoConstraints = false
         arrowImageView.contentMode = .scaleAspectFit
         arrowImageView.tintColor = hexToUIColor(hex: color)
         
-        // Hiyerarşi oluştur
         iconContainer.addSubview(iconImageView)
         cardView.addSubview(colorView)
         cardView.addSubview(iconContainer)
@@ -374,7 +358,6 @@ class PersonalizedViewController: UIViewController {
         cardView.addSubview(descriptionLabel)
         cardView.addSubview(arrowImageView)
         
-        // Constraint'leri ayarla
         NSLayoutConstraint.activate([
             colorView.topAnchor.constraint(equalTo: cardView.topAnchor),
             colorView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
@@ -408,7 +391,6 @@ class PersonalizedViewController: UIViewController {
         return cardView
     }
     
-    // Hex kodunu UIColor'a dönüştürme yardımcı fonksiyonu
     private func hexToUIColor(hex: String) -> UIColor {
         var cString: String = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         
@@ -504,7 +486,7 @@ extension PersonalizedViewController: UIScrollViewDelegate {
     }
     
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        // Kaydırma bittiğinde aktif kartı güncelle
+
         let pageWidth = scrollView.frame.size.width
         let currentPage = Int(scrollView.contentOffset.x / pageWidth)
         

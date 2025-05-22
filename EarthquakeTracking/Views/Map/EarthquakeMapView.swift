@@ -178,13 +178,12 @@ class EarthquakeMapViewController: UIViewController {
     }
     
     private func performFocusOnEarthquake(_ coordinate: CLLocationCoordinate2D, earthquake: Earthquake) {
-        // Haritayı deprem konumuna odakla
+
         let region = MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
         mapView.setRegion(region, animated: true)
         
         var targetAnnotation: EarthquakeAnnotation? = nil
         
-        // Deprem için mevcut annotation'ı bul
         for annotation in mapView.annotations {
             if let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
                 if abs(earthquakeAnnotation.coordinate.latitude - coordinate.latitude) < 0.00001 &&
@@ -195,7 +194,6 @@ class EarthquakeMapViewController: UIViewController {
             }
         }
         
-        // Eğer annotation yoksa, yeni bir tane oluştur
         if targetAnnotation == nil {
             targetAnnotation = EarthquakeAnnotation(coordinate: coordinate, earthquake: earthquake)
             mapView.addAnnotation(targetAnnotation!)
@@ -210,7 +208,6 @@ class EarthquakeMapViewController: UIViewController {
             )
             annotation.isSelected = true
             
-            // Deprem modeldeki seçili deprem olarak kaydedilmeli
             viewModel.selectEarthquake(annotation)
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
@@ -220,11 +217,9 @@ class EarthquakeMapViewController: UIViewController {
                     self.highlightSelectedAnnotation(annotationView)
                     self.selectedAnnotationView = annotationView
                     
-                    // Popup'ı hemen göster - bu satır çok önemli!
                     if let earthquake = self.viewModel.selectedEarthquake {
                         self.updatePopupView(with: earthquake)
                         
-                        // Popup'ın konumunu annotation'a göre ayarla
                         if let selectedView = self.selectedAnnotationView {
                             self.positionPopupRelativeToAnnotation(selectedView)
                         }
@@ -602,7 +597,7 @@ class EarthquakeMapViewController: UIViewController {
             self.popupView.transform = CGAffineTransform(rotationAngle: 30)
         } completion: { _ in
             self.popupView.isHidden = true
-            // Seçili annotation'ı sıfırla
+
             self.viewModel.clearSelectedEarthquake()
             self.selectedAnnotationView = nil
             self.resetAllAnnotations()
@@ -744,12 +739,11 @@ extension EarthquakeMapViewController: EarthquakeMapViewModelDelegate {
 // MARK: - MKMapViewDelegate
 extension EarthquakeMapViewController: MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        // Kullanıcı konumu için varsayılan görünümü kullan
+
         if annotation is MKUserLocation {
             return nil
         }
         
-        // Deprem annotation'ı için özel görünüm oluştur
         if let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
             let identifier = "EarthquakeAnnotation"
             var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
@@ -758,7 +752,6 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                 annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                 annotationView?.canShowCallout = false
                 
-                // Yeni eklenen annotation'a animasyon uygula
                 annotationView?.transform = CGAffineTransform(scaleX: 0.1, y: 0.1)
                 UIView.animate(withDuration: 0.3) {
                     annotationView?.transform = CGAffineTransform.identity
@@ -767,15 +760,12 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                 annotationView?.annotation = annotation
             }
             
-            // Büyüklüğe göre renk ve boyut ayarla
             let magnitude = viewModel.getMagnitude(for: earthquakeAnnotation.earthquake)
             annotationView?.markerTintColor = viewModel.getColor(for: earthquakeAnnotation.earthquake)
             
-            // Magnitude bazlı ölçeklendirme
             let scale = viewModel.getMarkerScale(for: earthquakeAnnotation.earthquake)
             annotationView?.transform = CGAffineTransform(scaleX: scale, y: scale)
             
-            // Büyüklüğe göre ikon belirleme
             if magnitude >= 5.0 {
                 annotationView?.glyphImage = UIImage(systemName: "exclamationmark.triangle.fill")
             } else if magnitude >= 4.0 {
@@ -785,7 +775,6 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
                 annotationView?.glyphTintColor = .white
             }
             
-            // Özel işaretleme ekle - seçilmiş annotation ise farklı bir görünüm uygula
             if let selectedEarthquake = viewModel.selectedEarthquake,
                earthquakeAnnotation.matchesEarthquake(selectedEarthquake) {
                 
@@ -803,20 +792,19 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
     }
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        // MapKit tarafından bir annotation seçildiğinde, bizim özel tıklama davranışımızı kullan
+
         if let annotation = view.annotation as? EarthquakeAnnotation {
-            // Seçili annotation'ı resetle
+
             mapView.deselectAnnotation(annotation, animated: false)
             
-            // Zaten seçili mi kontrol et
             let isAlreadySelected = (viewModel.selectedEarthquake != nil &&
                                      annotation.matchesEarthquake(viewModel.selectedEarthquake!))
             
             if isAlreadySelected && !popupView.isHidden {
-                // Aynı annotation'a tekrar tıklandıysa popup'ı kapat
+
                 closePopup()
             } else {
-                // Yeni bir annotation'a tıklandıysa veya popup kapalıysa, vurgula ve popup'ı göster
+
                 resetAllAnnotations()
                 annotation.isSelected = true
                 highlightSelectedAnnotation(view)
@@ -826,9 +814,8 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
         }
     }
     
-    // Haritada region değiştiğinde çağrılır - ek bilgi olarak
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        // Harita bölgesi değiştiğinde tüm annotation'ların doğru boyut ve konumda olmasını sağla
+
         for annotation in mapView.annotations {
             if let view = mapView.view(for: annotation) as? MKMarkerAnnotationView,
                let earthquakeAnnotation = annotation as? EarthquakeAnnotation {
@@ -847,12 +834,11 @@ extension EarthquakeMapViewController: MKMapViewDelegate {
 // MARK: - UIGestureRecognizerDelegate
 extension EarthquakeMapViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        // PopupView veya içindeki herhangi bir elemana dokunulduğunda tap gesture'ı engelle
+
         if let touchView = touch.view, touchView == popupView || touchView.isDescendant(of: popupView) {
             return false
         }
         
-        // MapView dışında bir yere dokunulduğunda tap gesture'ı engelle
         return touch.view == mapView
     }
 }
@@ -931,20 +917,17 @@ class EarthquakeMagnitudeLegendView: UIView {
     private func setupUI() {
         backgroundColor = UIColor.white.withAlphaComponent(0.9)
         
-        // Title Label
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "Deprem Büyüklüğü"
         titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
         titleLabel.textColor = AppTheme.titleTextColor
         
-        // Stack View
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
         stackView.spacing = 4
         stackView.alignment = .fill
         stackView.distribution = .fillEqually
         
-        // Add subviews
         addSubview(titleLabel)
         addSubview(stackView)
         
@@ -959,7 +942,6 @@ class EarthquakeMagnitudeLegendView: UIView {
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
         ])
         
-        // Add magnitude levels to stack view
         addMagnitudeLevel(color: UIColor(red: 0.0, green: 0.7, blue: 0.0, alpha: 1.0), text: "< 2.0")
         addMagnitudeLevel(color: UIColor(red: 0.6, green: 0.8, blue: 0.0, alpha: 1.0), text: "2.0 - 2.9")
         addMagnitudeLevel(color: UIColor(red: 0.8, green: 0.8, blue: 0.0, alpha: 1.0), text: "3.0 - 3.9")

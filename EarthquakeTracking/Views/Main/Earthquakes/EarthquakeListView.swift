@@ -101,7 +101,6 @@ class EarthquakeListViewController: UIViewController {
         return label
     }()
     
-    // İlk sıralama animasyonu için bayrak
     private var initialAnimationCompleted = false
     
     // MARK: - Lifecycle
@@ -112,7 +111,6 @@ class EarthquakeListViewController: UIViewController {
         setupBindings()
         fetchEarthquakes()
         
-        // İlk görünümde başlık için sallanma animasyonu ekle
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.animateHeaderShake()
         }
@@ -139,7 +137,7 @@ class EarthquakeListViewController: UIViewController {
     
     // MARK: - Setup
     private func setupBackground() {
-        // Eski gradyan kodu yerine AppTheme kullan
+
         backgroundGradientLayer.colors = [
             AppTheme.indigoColor.cgColor,
             AppTheme.indigoLightColor.cgColor
@@ -149,7 +147,7 @@ class EarthquakeListViewController: UIViewController {
     
     private func setupNavigationBarAppearance() {
         if let navigationBar = self.navigationController?.navigationBar {
-            // AppTheme'den navigation bar görünümünü al
+
             let appearance = AppTheme.configureNavigationBarAppearance()
             navigationBar.standardAppearance = appearance
             navigationBar.scrollEdgeAppearance = appearance
@@ -215,14 +213,13 @@ class EarthquakeListViewController: UIViewController {
         
         navigationItem.rightBarButtonItems = [sortButton, mapButton]
         
-        // Header'a initial animation efekti uygula
         headerView.alpha = 0
         headerView.transform = CGAffineTransform(rotationAngle: -20)
     }
     
     private func setupTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // AppTheme'den tab bar görünümünü al
+
             tabBar.standardAppearance = AppTheme.configureTabBarAppearance()
             
             if #available(iOS 15.0, *) {
@@ -233,7 +230,7 @@ class EarthquakeListViewController: UIViewController {
     
     private func resetTabBarAppearance() {
         if let tabBar = self.tabBarController?.tabBar {
-            // Varsayılan tab bar görünümünü geri yükle
+
             tabBar.standardAppearance = UITabBarAppearance()
             
             if #available(iOS 15.0, *) {
@@ -271,7 +268,6 @@ class EarthquakeListViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Header animasyonunu başlat
             if self.headerView.alpha < 1 {
                 UIView.animate(withDuration: 0.6, delay: 0.1, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [], animations: {
                     self.headerView.alpha = 1
@@ -281,7 +277,6 @@ class EarthquakeListViewController: UIViewController {
             
             self.tableView.reloadData()
             
-            // İlk animasyon henüz yapılmadıysa
             if !self.initialAnimationCompleted && !self.viewModel.earthquakes.isEmpty {
                 self.animateInitialCellAppearance()
                 self.initialAnimationCompleted = true
@@ -328,7 +323,6 @@ class EarthquakeListViewController: UIViewController {
     
     // MARK: - Animation Methods
     
-    // Header için sallantı animasyonu
     private func animateHeaderShake() {
         let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
         animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
@@ -336,7 +330,6 @@ class EarthquakeListViewController: UIViewController {
         animation.duration = 0.7
         headerView.layer.add(animation, forKey: "shake")
         
-        // İkon için dönen animasyon
         let rotationAnimation = CABasicAnimation(keyPath: "transform.rotation.z")
         rotationAnimation.fromValue = -0.1
         rotationAnimation.toValue = 0.1
@@ -346,24 +339,22 @@ class EarthquakeListViewController: UIViewController {
         headerIconView.layer.add(rotationAnimation, forKey: "rotate")
     }
     
-    // Hücrelerin ilk yüklendiğinde kademeli görünme animasyonu
     private func animateInitialCellAppearance() {
-        let initialCells = min(viewModel.earthquakes.count, 15) // Max 15 hücre animasyonu
+        let initialCells = min(viewModel.earthquakes.count, 15)
         
         for i in 0..<initialCells {
             let indexPath = IndexPath(row: i, section: 0)
             if let cell = tableView.cellForRow(at: indexPath) as? ModernEarthquakeCell {
-                // Hücreyi ilk durumuna getir
+
                 cell.containerView.transform = CGAffineTransform(translationX: view.bounds.width, y: 0)
                 cell.containerView.alpha = 0
                 
-                // Animasyonu uygula
                 UIView.animate(withDuration: 0.5, delay: 0.05 * Double(i), usingSpringWithDamping: 0.8, initialSpringVelocity: 0.2, options: [], animations: {
                     cell.containerView.transform = .identity
                     cell.containerView.alpha = 1
                 }, completion: { _ in
-                    // Vurgu animasyonu ekle
-                    if i < 3 { // İlk 3 deprem için vurgu ekle
+
+                    if i < 3 {
                         self.highlightCell(cell, intensity: 1.0 - (Double(i) * 0.2))
                     }
                 })
@@ -371,9 +362,8 @@ class EarthquakeListViewController: UIViewController {
         }
     }
     
-    // Hücreleri vurgulama animasyonu
     private func highlightCell(_ cell: ModernEarthquakeCell, intensity: Double) {
-        // Glow efekti ekle
+
         let originalShadowOpacity = cell.containerView.layer.shadowOpacity
         let originalShadowRadius = cell.containerView.layer.shadowRadius
         
@@ -477,7 +467,6 @@ extension EarthquakeListViewController: UITableViewDataSource {
         let earthquake = viewModel.earthquakes[indexPath.row]
         cell.configure(with: earthquake)
         
-        // İlk yükleme sırasında cell'i görünmez yap, animasyonla gösterilecek
         if !initialAnimationCompleted {
             cell.containerView.alpha = 0
             cell.containerView.transform = CGAffineTransform(translationX: tableView.bounds.width, y: 0)
@@ -490,7 +479,7 @@ extension EarthquakeListViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension EarthquakeListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // Seçim animasyonunu devre dışı bırakmak için seçimi hemen kaldır
+
         tableView.deselectRow(at: indexPath, animated: false)
         
         let selectedEarthquake = viewModel.earthquakes[indexPath.row]
@@ -531,7 +520,7 @@ extension EarthquakeListViewController: UITableViewDelegate {
 // MARK: - ModernEarthquakeCell
 class ModernEarthquakeCell: UITableViewCell {
     
-    let containerView = UIView() // containerView'i public yapılmalı
+    let containerView = UIView()
     private let locationLabel = UILabel()
     private let dateTimeLabel = UILabel()
     private let magnitudeCircleView = UIView()
@@ -554,7 +543,7 @@ class ModernEarthquakeCell: UITableViewCell {
     }
     
     private func setupUI() {
-        selectionStyle = .none // Seçim stilini kaldır
+        selectionStyle = .none
         backgroundColor = .clear
         contentView.backgroundColor = .clear
         
@@ -704,13 +693,11 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitude = "N/A"
         }
         
-        // Update magnitude circle color based on magnitude
         if magValue >= 5.0 {
             magnitudeCircleView.backgroundColor = UIColor(red: 231.0/255.0, green: 76.0/255.0, blue: 60.0/255.0, alpha: 1.0) // Kırmızı
             magnitudeIconView.image = UIImage(systemName: "exclamationmark.triangle.fill")
             magnitudeValueLabel.textColor = UIColor(red: 231.0/255.0, green: 76.0/255.0, blue: 60.0/255.0, alpha: 1.0) // Kırmızı
             
-            // Büyük depremler için ekstra vurgu animasyonu
             addPulseAnimation(to: magnitudeCircleView)
         } else if magValue >= 4.0 {
             magnitudeCircleView.backgroundColor = UIColor(red: 230.0/255.0, green: 126.0/255.0, blue: 34.0/255.0, alpha: 1.0) // Koyu turuncu
@@ -722,11 +709,9 @@ class ModernEarthquakeCell: UITableViewCell {
             magnitudeValueLabel.textColor = UIColor(red: 255.0/255.0, green: 165.0/255.0, blue: 0.0/255.0, alpha: 1.0) // Daha açık turuncu
         }
         
-        // Deprem büyüklüğü ve derinlik bilgisi
         magnitudeValueLabel.text = "\(magnitude) ML"
         depthLabel.text = "\(earthquake.depth_km) km"
         
-        // Hafif bir cell animasyonu
         containerView.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
         UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut, animations: {
             self.containerView.transform = CGAffineTransform.identity
@@ -734,12 +719,10 @@ class ModernEarthquakeCell: UITableViewCell {
         })
     }
     
-    // Büyük depremler için nabız animasyonu
     private func addPulseAnimation(to view: UIView) {
-        // Mevcut animasyonları kaldır
+
         view.layer.removeAnimation(forKey: "pulse")
         
-        // Yeni nabız animasyonu
         let pulseAnimation = CABasicAnimation(keyPath: "transform.scale")
         pulseAnimation.duration = 0.8
         pulseAnimation.fromValue = 1.0
@@ -750,7 +733,6 @@ class ModernEarthquakeCell: UITableViewCell {
         
         view.layer.add(pulseAnimation, forKey: "pulse")
         
-        // Ayrıca hafif bir titreşim de ekle
         let shakeAnimation = CAKeyframeAnimation(keyPath: "transform.translation.x")
         shakeAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         shakeAnimation.values = [-2, 2, -1, 1, 0]
