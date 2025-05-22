@@ -86,7 +86,7 @@ class LlamaChatViewController: UIViewController {
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             
-            appearance.backgroundColor = UIColor(red: 0.0/255.0, green: 20.0/255.0, blue: 40.0/255.0, alpha: 1.0)
+            appearance.backgroundColor = AppTheme.indigoColor
             
             let itemAppearance = UITabBarItemAppearance()
             
