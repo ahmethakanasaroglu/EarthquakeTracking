@@ -333,7 +333,7 @@ class LlamaChatViewController: UIViewController {
         if infoViewVisible {
             tableView.topAnchor.constraint(equalTo: infoView.bottomAnchor, constant: 8).isActive = true
         } else {
-            // Custom navigation bar'ın altından başla
+
             if let navBar = view.subviews.first(where: { $0.subviews.contains(where: { ($0 as? UILabel)?.text == "Deprem Asistanı" }) }) {
                 tableView.topAnchor.constraint(equalTo: navBar.bottomAnchor, constant: 16).isActive = true
             } else {
@@ -627,11 +627,10 @@ class MessageCell: UITableViewCell {
             messageLabel.textColor = .white
             energyRingView.isHidden = true
         } else {
-            // Asistan mesajları için transparent bubble
+
             bubbleView.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
             messageLabel.textColor = .white
             
-            // Asistan mesajlarında enerji halkası görünümü
             energyRingView.isHidden = false
             energyRingView.image = createEnergyRingImage()
         }
